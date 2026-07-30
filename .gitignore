@@ -1,0 +1,42 @@
+# Python
+# Python Virtual Environment
+.venv
+**/.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment variables
+.env
+.env.*
+
+# Node.js
+node_modules
+**/node_modules/
+dist
+build
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Frontend cache
+frontend/node_modules/
+frontend/dist/
+
+# Backend cache
+backend/__pycache__/
+backend/.pytest_cache/
+
+# ChromaDB local storage
+chroma/
