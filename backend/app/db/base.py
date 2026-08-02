@@ -10,3 +10,5 @@ from app.db.base_class import Base  # noqa — re-exported for Alembic env.py
 from app.models.user import User  # noqa
 from app.models.project import Project  # noqa
 from app.models.workspace import ProjectWorkspace  # noqa
+from app.models.questionnaire import ProjectQuestionnaire  # noqa
+

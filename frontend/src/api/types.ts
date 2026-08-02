@@ -83,3 +83,75 @@ export interface ProjectUpdate {
   status?: string;
   workspace?: WorkspaceUpdate;
 }
+
+// ─── Wizard / Questionnaire Types ───────────────────────────────────────────
+
+export interface FunctionalRequirement {
+  id: string;
+  text: string;
+  category: string;
+  priority: 'must_have' | 'should_have' | 'could_have' | 'wont_have';
+}
+
+export interface WizardAnswers {
+  // Step 1
+  project_name?: string;
+  project_description?: string;
+  project_category?: string;
+
+  // Step 2
+  industry?: string;
+
+  // Step 3
+  target_users?: string[];
+
+  // Step 4
+  business_objectives?: string[];
+
+  // Step 5
+  platforms?: string[];
+
+  // Step 6
+  expected_users?: string;
+  timeline?: string;
+  budget?: string;
+  team_size?: string;
+  priority?: string;
+  business_size?: string;
+
+  // Step 7
+  functional_requirements?: FunctionalRequirement[];
+
+  // Step 8
+  non_functional_requirements?: string[];
+
+  // Step 9
+  integrations?: string[];
+
+  // Step 10
+  business_goals?: string;
+  constraints?: string;
+  special_requirements?: string;
+  notes?: string;
+}
+
+export interface Questionnaire {
+  id: string;
+  project_id: string;
+  answers: WizardAnswers;
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuestionnaireCreate {
+  answers: WizardAnswers;
+  status?: string;
+}
+
+export interface QuestionnaireUpdate {
+  answers?: WizardAnswers;
+  status?: string;
+}
+

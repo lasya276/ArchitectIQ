@@ -26,6 +26,8 @@ class Project(Base):
     # Relationships
     owner = relationship("User", back_populates="projects")
     workspace = relationship("ProjectWorkspace", back_populates="project", uselist=False, cascade="all, delete-orphan")
+    questionnaire = relationship("ProjectQuestionnaire", back_populates="project", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Project id={self.id} title={self.title} user_id={self.user_id}>"
+
