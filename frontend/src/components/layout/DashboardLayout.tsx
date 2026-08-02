@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Layers, 
   FolderKanban, 
@@ -15,6 +15,7 @@ import {
   User 
 } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useAuth } from '../../context/AuthContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -22,15 +23,29 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch {
+      navigate('/login');
+    }
+  };
+
+  const isWorkspaceActive = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/workspace');
 
   const navItems = [
-    { label: 'Workspaces', icon: <FolderKanban className="w-4 h-4" />, active: true },
-    { label: 'Blueprints', icon: <FileText className="w-4 h-4" />, active: false },
-    { label: 'Health Scores', icon: <Activity className="w-4 h-4" />, active: false },
-    { label: 'Version Control', icon: <GitBranch className="w-4 h-4" />, active: false },
-    { label: 'Simulations', icon: <SlidersHorizontal className="w-4 h-4" />, active: false },
-    { label: 'Visual Diagrams', icon: <Workflow className="w-4 h-4" />, active: false },
-    { label: 'Settings', icon: <Settings className="w-4 h-4" />, active: false },
+    { label: 'Workspaces', icon: <FolderKanban className="w-4 h-4" />, path: '/dashboard', active: isWorkspaceActive },
+    { label: 'Blueprints', icon: <FileText className="w-4 h-4" />, path: '#', active: false },
+    { label: 'Health Scores', icon: <Activity className="w-4 h-4" />, path: '#', active: false },
+    { label: 'Version Control', icon: <GitBranch className="w-4 h-4" />, path: '#', active: false },
+    { label: 'Simulations', icon: <SlidersHorizontal className="w-4 h-4" />, path: '#', active: false },
+    { label: 'Visual Diagrams', icon: <Workflow className="w-4 h-4" />, path: '#', active: false },
+    { label: 'Settings', icon: <Settings className="w-4 h-4" />, path: '#', active: false },
   ];
 
   return (
@@ -77,6 +92,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           {navItems.map((item, idx) => (
             <button
               key={idx}
+              onClick={() => {
+                if (item.path !== '#') {
+                  navigate(item.path);
+                  setIsSidebarOpen(false);
+                }
+              }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
                 item.active
                   ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-semibold'
@@ -92,22 +113,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         {/* User Profile Footer */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                <User className="w-4 h-4" />
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[110px]">
-                  Architect Demo
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+                  {user?.name || 'Architect User'}
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[110px]">
-                  architect@iq.local
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {user?.email || 'user@example.com'}
                 </span>
               </div>
             </div>
-            <Link to="/login" id="dash-logout-btn" className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 transition-colors">
+            <button
+              id="dash-logout-btn"
+              onClick={handleLogout}
+              title="Sign Out"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 transition-colors shrink-0"
+            >
               <LogOut className="w-4 h-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -134,7 +160,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Phase 1 Active
+              Phase 2 Active
             </span>
           </div>
         </header>
@@ -147,3 +173,5 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     </div>
   );
 };
+
+export default DashboardLayout;

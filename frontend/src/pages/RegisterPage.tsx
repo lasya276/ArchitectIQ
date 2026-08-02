@@ -1,21 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, User, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Layers, User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
+import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const { register, isAuthenticated } = useAuth();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Phase 1 UI behavior: Navigate directly to empty dashboard UI
-    navigate('/dashboard');
+    setErrorMessage(null);
+
+    if (!fullName.trim() || !email.trim() || !password) {
+      setErrorMessage('Please fill in all required fields.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await register({
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -42,6 +76,13 @@ export const RegisterPage: React.FC = () => {
 
       {/* Registration Card Container */}
       <Card className="w-full max-w-md shadow-xl border-slate-200/80 dark:border-slate-800/80">
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             id="register-name-input"
@@ -80,6 +121,7 @@ export const RegisterPage: React.FC = () => {
             id="register-submit-btn"
             type="submit"
             size="lg"
+            isLoading={isSubmitting}
             className="w-full mt-2"
             rightIcon={<ArrowRight className="w-4 h-4" />}
           >
@@ -97,3 +139,5 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
+
+export default RegisterPage;

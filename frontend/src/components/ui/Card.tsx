@@ -7,6 +7,7 @@ interface CardProps {
   subtitle?: string;
   action?: React.ReactNode;
   glow?: boolean;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -16,9 +17,11 @@ export const Card: React.FC<CardProps> = ({
   subtitle,
   action,
   glow = false,
+  onClick,
 }) => {
   return (
     <div
+      onClick={onClick}
       className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 transition-all duration-300 ${
         glow ? 'hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10' : 'hover:border-slate-300 dark:hover:border-slate-700'
       } ${className}`}
