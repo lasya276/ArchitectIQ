@@ -27,6 +27,7 @@ class Project(Base):
     owner = relationship("User", back_populates="projects")
     workspace = relationship("ProjectWorkspace", back_populates="project", uselist=False, cascade="all, delete-orphan")
     questionnaire = relationship("ProjectQuestionnaire", back_populates="project", uselist=False, cascade="all, delete-orphan")
+    blueprints = relationship("ProjectBlueprint", back_populates="project", cascade="all, delete-orphan", order_by="desc(ProjectBlueprint.version)")
 
     def __repr__(self) -> str:
         return f"<Project id={self.id} title={self.title} user_id={self.user_id}>"

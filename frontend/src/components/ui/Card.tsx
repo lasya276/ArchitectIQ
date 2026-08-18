@@ -2,6 +2,7 @@ import React from 'react';
 
 interface CardProps {
   children: React.ReactNode;
+  id?: string;
   className?: string;
   title?: string;
   subtitle?: string;
@@ -12,6 +13,7 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({
   children,
+  id,
   className = '',
   title,
   subtitle,
@@ -21,6 +23,7 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <div
+      id={id}
       onClick={onClick}
       className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 transition-all duration-300 ${
         glow ? 'hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10' : 'hover:border-slate-300 dark:hover:border-slate-700'

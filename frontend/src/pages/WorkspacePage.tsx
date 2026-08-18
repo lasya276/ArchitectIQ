@@ -21,7 +21,11 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { projectService } from '../services/projectService';
-import { Project } from '../api/types';
+import { questionnaireService } from '../services/questionnaireService';
+import { blueprintService } from '../services/blueprintService';
+import { Project, WizardAnswers } from '../api/types';
+import { mapQuestionnaireToWorkspace } from '../utils/workspaceMapper';
+import { Modal } from '../components/ui/Modal';
 
 export const WorkspacePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,11 +49,53 @@ export const WorkspacePage: React.FC = () => {
   const [stakeholders, setStakeholders] = useState('');
   const [targetUsers, setTargetUsers] = useState('');
 
+  // Snapshot of last saved values to detect unsaved changes
+  const [savedSnapshot, setSavedSnapshot] = useState<Record<string, string>>({});
+
+  // Blueprint status
+  const [hasBlueprint, setHasBlueprint] = useState(false);
+  const [blueprintVersion, setBlueprintVersion] = useState<number | null>(null);
+
   // UI state
   const [activeTab, setActiveTab] = useState<'all' | 'vision' | 'problem' | 'requirements' | 'constraints' | 'business' | 'stakeholders' | 'users'>('all');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+
+  // Generation Modal States
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [showRegenerateConfirmModal, setShowRegenerateConfirmModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState<number>(0);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Check if current form has unsaved modifications
+  const hasUnsavedChanges = useCallback(() => {
+    return (
+      title !== (savedSnapshot.title ?? '') ||
+      description !== (savedSnapshot.description ?? '') ||
+      status !== (savedSnapshot.status ?? 'draft') ||
+      vision !== (savedSnapshot.vision ?? '') ||
+      problemStatement !== (savedSnapshot.problemStatement ?? '') ||
+      requirements !== (savedSnapshot.requirements ?? '') ||
+      constraints !== (savedSnapshot.constraints ?? '') ||
+      businessGoals !== (savedSnapshot.businessGoals ?? '') ||
+      stakeholders !== (savedSnapshot.stakeholders ?? '') ||
+      targetUsers !== (savedSnapshot.targetUsers ?? '')
+    );
+  }, [
+    title,
+    description,
+    status,
+    vision,
+    problemStatement,
+    requirements,
+    constraints,
+    businessGoals,
+    stakeholders,
+    targetUsers,
+    savedSnapshot,
+  ]);
 
   // Load project by ID
   const fetchProjectDetail = useCallback(async () => {
@@ -57,21 +103,67 @@ export const WorkspacePage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await projectService.getProjectById(id);
+      const [data, bpVersions] = await Promise.all([
+        projectService.getProjectById(id),
+        blueprintService.getBlueprintVersions(id).catch(() => []),
+      ]);
       setProject(data);
-      setTitle(data.title || '');
-      setDescription(data.description || '');
-      setStatus(data.status || 'draft');
 
-      if (data.workspace) {
-        setVision(data.workspace.vision || '');
-        setProblemStatement(data.workspace.problem_statement || '');
-        setRequirements(data.workspace.requirements || '');
-        setConstraints(data.workspace.constraints || '');
-        setBusinessGoals(data.workspace.business_goals || '');
-        setStakeholders(data.workspace.stakeholders || '');
-        setTargetUsers(data.workspace.target_users || '');
+      if (bpVersions && bpVersions.length > 0) {
+        setHasBlueprint(true);
+        setBlueprintVersion(bpVersions[0].version);
+      } else {
+        setHasBlueprint(false);
+        setBlueprintVersion(null);
       }
+
+      let questionnaireAnswers: WizardAnswers = {};
+      try {
+        const qData = await questionnaireService.getQuestionnaire(id);
+        if (qData && qData.answers) {
+          questionnaireAnswers = qData.answers;
+        }
+      } catch {
+        // Questionnaire may not exist for projects created without wizard
+      }
+
+      const mapped = mapQuestionnaireToWorkspace(questionnaireAnswers, data.workspace);
+
+      const resolvedTitle = data.title || questionnaireAnswers.project_name || '';
+      const resolvedDesc = data.description || questionnaireAnswers.project_description || '';
+      const resolvedStatus = data.status || 'draft';
+      const resolvedVision = mapped.vision || '';
+      const resolvedProblem = mapped.problem_statement || '';
+      const resolvedReqs = mapped.requirements || '';
+      const resolvedConstraints = mapped.constraints || '';
+      const resolvedGoals = mapped.business_goals || '';
+      const resolvedStakeholders = mapped.stakeholders || '';
+      const resolvedUsers = mapped.target_users || '';
+
+      setTitle(resolvedTitle);
+      setDescription(resolvedDesc);
+      setStatus(resolvedStatus);
+      setVision(resolvedVision);
+      setProblemStatement(resolvedProblem);
+      setRequirements(resolvedReqs);
+      setConstraints(resolvedConstraints);
+      setBusinessGoals(resolvedGoals);
+      setStakeholders(resolvedStakeholders);
+      setTargetUsers(resolvedUsers);
+
+      // Store saved snapshot
+      setSavedSnapshot({
+        title: resolvedTitle,
+        description: resolvedDesc,
+        status: resolvedStatus,
+        vision: resolvedVision,
+        problemStatement: resolvedProblem,
+        requirements: resolvedReqs,
+        constraints: resolvedConstraints,
+        businessGoals: resolvedGoals,
+        stakeholders: resolvedStakeholders,
+        targetUsers: resolvedUsers,
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to load project details.');
     } finally {
@@ -84,16 +176,16 @@ export const WorkspacePage: React.FC = () => {
   }, [fetchProjectDetail]);
 
   // Handle Save
-  const handleSave = async (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent): Promise<boolean> => {
     if (e) e.preventDefault();
-    if (!id) return;
+    if (!id) return false;
 
     setSaveSuccessMessage(null);
     setSaveErrorMessage(null);
 
     if (!title.trim()) {
       setSaveErrorMessage('Project Name cannot be empty.');
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -114,12 +206,83 @@ export const WorkspacePage: React.FC = () => {
       });
 
       setProject(updated);
+      setSavedSnapshot({
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        vision,
+        problemStatement,
+        requirements,
+        constraints,
+        businessGoals,
+        stakeholders,
+        targetUsers,
+      });
+
       setSaveSuccessMessage('Workspace changes saved successfully!');
       setTimeout(() => setSaveSuccessMessage(null), 4000);
+      return true;
     } catch (err: any) {
       setSaveErrorMessage(err.message || 'Failed to save workspace changes.');
+      return false;
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Trigger Architecture Generation flow
+  const handleInitiateGeneration = () => {
+    if (hasUnsavedChanges()) {
+      setShowUnsavedModal(true);
+      return;
+    }
+    if (hasBlueprint) {
+      setShowRegenerateConfirmModal(true);
+      return;
+    }
+    executeGeneration();
+  };
+
+  // Execute the actual blueprint generation API call with live progress
+  const executeGeneration = async () => {
+    if (!id) return;
+    setIsGenerating(true);
+    setGenerationError(null);
+    setShowUnsavedModal(false);
+    setShowRegenerateConfirmModal(false);
+    setGenerationStep(1);
+
+    try {
+      // Step 1: Read workspace specifications
+      await new Promise((r) => setTimeout(r, 400));
+      setGenerationStep(2);
+
+      // Step 2: Analyze requirements & constraints
+      await new Promise((r) => setTimeout(r, 400));
+      setGenerationStep(3);
+
+      // Step 3: Call generation API
+      await blueprintService.generateBlueprint(id, { increment_version: true });
+      setGenerationStep(4);
+      await new Promise((r) => setTimeout(r, 300));
+
+      navigate(`/workspace/${id}/blueprint`);
+    } catch (err: any) {
+      setGenerationError(err.message || 'Failed to generate architecture blueprint.');
+      setIsGenerating(false);
+    }
+  };
+
+  // Save workspace first, then proceed to generation
+  const handleSaveAndGenerate = async () => {
+    const saved = await handleSave();
+    if (saved) {
+      setShowUnsavedModal(false);
+      if (hasBlueprint) {
+        setShowRegenerateConfirmModal(true);
+      } else {
+        executeGeneration();
+      }
     }
   };
 
@@ -211,9 +374,20 @@ export const WorkspacePage: React.FC = () => {
               id="save-workspace-btn"
               onClick={() => handleSave()}
               isLoading={isSaving}
+              variant="outline"
+              size="sm"
               leftIcon={<Save className="w-4 h-4" />}
             >
               Save Workspace
+            </Button>
+
+            <Button
+              id="generate-architecture-btn"
+              onClick={handleInitiateGeneration}
+              size="sm"
+              leftIcon={<Sparkles className="w-4 h-4" />}
+            >
+              Generate Architecture
             </Button>
           </div>
         </div>
@@ -232,6 +406,34 @@ export const WorkspacePage: React.FC = () => {
             <span>{saveErrorMessage}</span>
           </div>
         )}
+
+        {/* Workspace vs Blueprint Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <button
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Workspace Specification</span>
+          </button>
+          <button
+            onClick={() => {
+              if (hasBlueprint) {
+                navigate(`/workspace/${id}/blueprint`);
+              } else {
+                handleInitiateGeneration();
+              }
+            }}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-500" />
+            <span>Architecture Blueprint</span>
+            {hasBlueprint && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                v{blueprintVersion}
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* Section Navigation Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-100 dark:border-slate-800/80 scrollbar-none">
@@ -459,17 +661,140 @@ export const WorkspacePage: React.FC = () => {
             <Button
               id="bottom-save-workspace-btn"
               type="submit"
+              variant="outline"
               size="sm"
               isLoading={isSaving}
               leftIcon={<Save className="w-4 h-4" />}
             >
               Save All Changes
             </Button>
+            <Button
+              id="bottom-generate-architecture-btn"
+              type="button"
+              size="sm"
+              onClick={handleInitiateGeneration}
+              leftIcon={<Sparkles className="w-4 h-4" />}
+            >
+              Generate Architecture Blueprint →
+            </Button>
           </div>
         </form>
+
+        {/* Unsaved Changes Confirmation Modal */}
+        <Modal
+          isOpen={showUnsavedModal}
+          onClose={() => setShowUnsavedModal(false)}
+          title="Save Workspace Before Generating Architecture"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              You have unsaved changes in your Workspace Specification. To ensure your architecture blueprint is generated using the most up-to-date requirements, please save your changes before proceeding.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUnsavedModal(false)}
+              >
+                Continue Editing
+              </Button>
+              <Button
+                size="sm"
+                isLoading={isSaving}
+                onClick={handleSaveAndGenerate}
+                leftIcon={<Save className="w-4 h-4" />}
+              >
+                Save & Generate Architecture
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Regenerate Confirmation Modal */}
+        <Modal
+          isOpen={showRegenerateConfirmModal}
+          onClose={() => setShowRegenerateConfirmModal(false)}
+          title="Generate Architecture Blueprint"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              An architecture blueprint (v{blueprintVersion}) already exists for this project. Generating architecture will create a new version (
+              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                v{(blueprintVersion ?? 1) + 1}
+              </span>
+              ) based on your latest Workspace Specification.
+            </p>
+            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-300">
+              <p className="font-semibold">Version History Protection:</p>
+              <p className="text-[11px] mt-0.5">
+                Your existing blueprint versions will remain intact and selectable in the version history.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRegenerateConfirmModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={executeGeneration}
+                leftIcon={<Sparkles className="w-4 h-4" />}
+              >
+                Generate Version v{(blueprintVersion ?? 1) + 1}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Generation Progress Modal */}
+        <Modal
+          isOpen={isGenerating}
+          onClose={() => {}}
+          title="Generating Architecture Blueprint"
+        >
+          <div className="space-y-4">
+            {generationError ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+                  {generationError}
+                </div>
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={() => setIsGenerating(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                <div className="flex items-center gap-2 font-bold text-indigo-600 dark:text-indigo-400">
+                  <Spinner size="sm" />
+                  <span>Synthesizing Architecture Blueprint...</span>
+                </div>
+                <div className="space-y-2 text-[11px] text-slate-500 dark:text-slate-400 pl-6">
+                  <p className={generationStep >= 1 ? 'text-emerald-600 font-semibold' : ''}>
+                    {generationStep > 1 ? '✓' : '→'} Reading workspace specifications & boundaries
+                  </p>
+                  <p className={generationStep >= 2 ? 'text-emerald-600 font-semibold' : ''}>
+                    {generationStep > 2 ? '✓' : generationStep === 2 ? '→' : '○'} Analyzing requirements & component interactions
+                  </p>
+                  <p className={generationStep >= 3 ? 'text-emerald-600 font-semibold' : ''}>
+                    {generationStep > 3 ? '✓' : generationStep === 3 ? '→' : '○'} Formulating technology stack & ADR decisions
+                  </p>
+                  <p className={generationStep >= 4 ? 'text-emerald-600 font-semibold' : ''}>
+                    {generationStep === 4 ? '✓' : '○'} Persisting blueprint version
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
       </div>
     </DashboardLayout>
   );
 };
 
 export default WorkspacePage;
+

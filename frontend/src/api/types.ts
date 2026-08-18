@@ -155,3 +155,116 @@ export interface QuestionnaireUpdate {
   status?: string;
 }
 
+// ─── Architecture Blueprint Types ───────────────────────────────────────────
+
+export interface OverviewSection {
+  summary: string;
+  domain: string;
+  primary_focus: string;
+  scope: string;
+}
+
+export interface ArchitectureStyleSection {
+  style_name: string;
+  pattern_type: string;
+  justification: string;
+}
+
+export interface TechStackSection {
+  frontend: string[];
+  backend: string[];
+  database: string[];
+  devops_infrastructure: string[];
+  third_party_services: string[];
+}
+
+export interface ComponentItem {
+  name: string;
+  type: string;
+  responsibility: string;
+  interfaces: string[];
+}
+
+export interface RelationshipItem {
+  source: string;
+  target: string;
+  interaction: string;
+  protocol: string;
+}
+
+export interface DataArchitectureSection {
+  storage_strategy: string;
+  data_stores: string[];
+  data_flow: string;
+}
+
+export interface IntegrationItem {
+  name: string;
+  purpose: string;
+  protocol: string;
+}
+
+export interface SecurityQualitySection {
+  security_controls: string[];
+  quality_attributes: string[];
+  compliance: string[];
+}
+
+export interface DecisionItem {
+  decision: string;
+  rationale: string;
+  grounded_requirement: string;
+  alternatives_considered: string[];
+}
+
+export interface RiskItem {
+  risk: string;
+  impact: string;
+  mitigation: string;
+  tradeoff: string;
+}
+
+export interface VisualDiagramSection {
+  diagram_type: string;
+  mermaid_code: string;
+  description: string;
+}
+
+export interface BlueprintSections {
+  overview: OverviewSection;
+  architecture_style: ArchitectureStyleSection;
+  tech_stack: TechStackSection;
+  components: ComponentItem[];
+  component_relationships: RelationshipItem[];
+  data_architecture: DataArchitectureSection;
+  integrations: IntegrationItem[];
+  security_and_quality: SecurityQualitySection;
+  decisions_and_rationale: DecisionItem[];
+  risks_and_tradeoffs: RiskItem[];
+  visual_diagram: VisualDiagramSection;
+}
+
+export interface ArchitectureBlueprint {
+  id: string;
+  project_id: string;
+  version: number;
+  status: string;
+  sections: BlueprintSections;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlueprintVersionItem {
+  version: number;
+  status: string;
+  created_at: string;
+}
+
+export interface BlueprintGenerateRequest {
+  increment_version?: boolean;
+}
+
+export interface BlueprintUpdateRequest {
+  sections: BlueprintSections | Record<string, any>;
+}
+

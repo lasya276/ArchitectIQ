@@ -8,6 +8,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { WorkspacePage } from './pages/WorkspacePage';
+import { WizardPage } from './pages/WizardPage';
+import { BlueprintPage } from './pages/BlueprintPage';
 
 export const App: React.FC = () => {
   return (
@@ -29,10 +31,26 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/wizard"
+              element={
+                <ProtectedRoute>
+                  <WizardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/workspace/:id"
               element={
                 <ProtectedRoute>
                   <WorkspacePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:id/blueprint"
+              element={
+                <ProtectedRoute>
+                  <BlueprintPage />
                 </ProtectedRoute>
               }
             />

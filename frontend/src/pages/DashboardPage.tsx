@@ -31,20 +31,12 @@ export const DashboardPage: React.FC = () => {
     projects, 
     isLoading, 
     error, 
-    createProject, 
     updateProject, 
     deleteProject 
   } = useProjects();
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Modals state
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   const [projectToEdit, setProjectToEdit] = useState<ProjectListItem | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -75,31 +67,6 @@ export const DashboardPage: React.FC = () => {
     )[0];
   }, [projects]);
 
-  // Handle Create Project
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateError(null);
-    if (!newTitle.trim()) {
-      setCreateError('Project name is required.');
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      const created = await createProject({
-        title: newTitle.trim(),
-        description: newDescription.trim() || undefined,
-      });
-      setIsCreateModalOpen(false);
-      setNewTitle('');
-      setNewDescription('');
-      navigate(`/workspace/${created.id}`);
-    } catch (err: any) {
-      setCreateError(err.message || 'Failed to create project.');
-    } finally {
-      setIsCreating(false);
-    }
-  };
 
   // Handle Edit/Rename Project
   const handleOpenEditModal = (project: ProjectListItem, e?: React.MouseEvent) => {
@@ -173,12 +140,7 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <Button
               id="new-project-btn"
-              onClick={() => {
-                setNewTitle('');
-                setNewDescription('');
-                setCreateError(null);
-                setIsCreateModalOpen(true);
-              }}
+              onClick={() => navigate('/wizard')}
               leftIcon={<Plus className="w-4 h-4" />}
             >
               Create Project
@@ -274,7 +236,7 @@ export const DashboardPage: React.FC = () => {
               ) : (
                 <Button
                   id="empty-create-project-btn"
-                  onClick={() => setIsCreateModalOpen(true)}
+                  onClick={() => navigate('/wizard')}
                   size="sm"
                   leftIcon={<Plus className="w-4 h-4" />}
                 >
@@ -385,67 +347,6 @@ export const DashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal: Create Project */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => {
-          if (!isCreating) setIsCreateModalOpen(false);
-        }}
-        title="Create Software Planning Project"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isCreating}
-              onClick={() => setIsCreateModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              id="confirm-create-project-btn"
-              size="sm"
-              isLoading={isCreating}
-              onClick={handleCreateProject}
-            >
-              Create & Open Workspace
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={handleCreateProject} className="space-y-4">
-          {createError && (
-            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{createError}</span>
-            </div>
-          )}
-
-          <Input
-            id="create-project-title-input"
-            label="Project Name"
-            type="text"
-            placeholder="e.g., E-Commerce Microservices Platform"
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            required
-          />
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Description (Optional)
-            </label>
-            <textarea
-              id="create-project-desc-input"
-              rows={3}
-              placeholder="Briefly describe the vision or scope of this project..."
-              value={newDescription}
-              onChange={e => setNewDescription(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-            />
-          </div>
-        </form>
-      </Modal>
 
       {/* Modal: Rename / Edit Project */}
       <Modal

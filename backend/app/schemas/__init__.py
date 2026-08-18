@@ -6,6 +6,13 @@ from app.schemas.user import UserCreate, UserLogin, UserUpdate, UserResponse, Us
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectListItem
 from app.schemas.workspace import WorkspaceCreate, WorkspaceUpdate, WorkspaceResponse
 from app.schemas.questionnaire import QuestionnaireCreate, QuestionnaireUpdate, QuestionnaireResponse
+from app.schemas.blueprint import (
+    BlueprintResponse,
+    BlueprintGenerateRequest,
+    BlueprintUpdateRequest,
+    BlueprintVersionItem,
+    BlueprintSections,
+)
 
 __all__ = [
     "Token",
@@ -25,5 +32,10 @@ __all__ = [
     "QuestionnaireCreate",
     "QuestionnaireUpdate",
     "QuestionnaireResponse",
+    "BlueprintResponse",
+    "BlueprintGenerateRequest",
+    "BlueprintUpdateRequest",
+    "BlueprintVersionItem",
+    "BlueprintSections",
 ]
 
