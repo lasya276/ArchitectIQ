@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { Modal } from '../components/ui/Modal';
+import { MermaidDiagram } from '../components/ui/MermaidDiagram';
 import {
   ArrowLeft,
   Sparkles,
@@ -27,6 +28,7 @@ import {
   ChevronUp,
   FileText,
   Workflow,
+  ArrowRight,
 } from 'lucide-react';
 import { projectService } from '../services/projectService';
 import { blueprintService } from '../services/blueprintService';
@@ -413,11 +415,24 @@ ${sections.visual_diagram.description}
 
             <Button
               id="regenerate-blueprint-btn"
+              variant="outline"
               size="sm"
               onClick={() => setShowRegenerateModal(true)}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
             >
               Regenerate Architecture
+            </Button>
+
+            <Button
+              id="generate-software-design-btn"
+              variant="primary"
+              size="sm"
+              onClick={() => navigate(`/workspace/${id}/software-design`, {
+                state: { blueprintVersion: blueprint?.version ?? selectedVersion ?? 1 }
+              })}
+              rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+            >
+              Generate Software Design
             </Button>
           </div>
         </div>
@@ -1061,22 +1076,14 @@ ${sections.visual_diagram.description}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <div className="space-y-3">
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                   {sections.visual_diagram.description}
                 </p>
-
-                <div className="p-3 rounded-lg bg-slate-900 text-slate-200 text-xs font-mono overflow-x-auto border border-slate-800">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pb-2 mb-2 border-b border-slate-800">
-                    <span>Mermaid.js DSL Specification</span>
-                    <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded">
-                      Phase 3B.4 Renderer Target
-                    </span>
-                  </div>
-                  <pre className="text-[11px] leading-relaxed text-indigo-300">
-                    {sections.visual_diagram.mermaid_code}
-                  </pre>
-                </div>
+                <MermaidDiagram
+                  code={sections.visual_diagram.mermaid_code}
+                  diagramIndex={0}
+                />
               </div>
             </Card>
           </div>

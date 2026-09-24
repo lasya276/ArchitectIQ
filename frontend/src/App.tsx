@@ -10,6 +10,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { WizardPage } from './pages/WizardPage';
 import { BlueprintPage } from './pages/BlueprintPage';
+import { SoftwareDesignPage } from './pages/SoftwareDesignPage';
 
 export const App: React.FC = () => {
   return (
@@ -51,6 +52,14 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <BlueprintPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace/:id/software-design"
+              element={
+                <ProtectedRoute>
+                  <SoftwareDesignPage />
                 </ProtectedRoute>
               }
             />

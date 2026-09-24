@@ -10,17 +10,17 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # PostgreSQL Configuration
-    POSTGRES_USER: str = "architect_user"
-    POSTGRES_PASSWORD: str = "architect_secure_password"
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: str = "5432"
-    POSTGRES_DB: str = "architectiq_db"
-    
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: str
+    POSTGRES_DB: str
+
     # ChromaDB Vector Storage Configuration
     CHROMA_DB_PATH: str = "./chroma_data"
     
     # Security & JWT Token Settings
-    JWT_SECRET: str = "architectiq_dev_super_secret_key_change_in_production_32bytes"
+    JWT_SECRET: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 Days
 

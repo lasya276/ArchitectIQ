@@ -268,3 +268,178 @@ export interface BlueprintUpdateRequest {
   sections: BlueprintSections | Record<string, any>;
 }
 
+// ─── Software Design Types ───────────────────────────────────────────────────
+
+export interface DesignOverview {
+  design_approach: string;
+  application_type: string;
+  architectural_style_alignment: string;
+  core_modules: string[];
+  primary_technologies: string[];
+  database_approach: string;
+  key_design_considerations: string[];
+}
+
+export interface HLDComponent {
+  name: string;
+  layer: string;
+  responsibility: string;
+  key_interactions: string[];
+  technology: string;
+}
+
+export interface HighLevelDesign {
+  system_overview: string;
+  components: HLDComponent[];
+  interaction_summary: string;
+}
+
+export interface LLDModule {
+  name: string;
+  module_type: string;
+  responsibility: string;
+  key_methods: string[];
+  dependencies: string[];
+  design_pattern: string;
+}
+
+export interface LowLevelDesign {
+  design_patterns_applied: string[];
+  modules: LLDModule[];
+  error_handling_strategy: string;
+  cross_cutting_concerns: string[];
+}
+
+export interface TechEntry {
+  layer: string;
+  technology: string;
+  purpose: string;
+  justification: string;
+}
+
+export interface TechStackDesign {
+  technologies: TechEntry[];
+  version_strategy: string;
+  compatibility_notes: string;
+}
+
+export interface FolderStructure {
+  structure_tree: string;
+  description: string;
+  key_directories: string[];
+  naming_conventions: string;
+}
+
+export interface DBField {
+  name: string;
+  data_type: string;
+  constraints: string;
+  description: string;
+}
+
+export interface DBEntity {
+  name: string;
+  entity_type: string;
+  description: string;
+  fields: DBField[];
+  relationships: string[];
+  indexes: string[];
+}
+
+export interface DatabaseDesign {
+  db_technology: string;
+  schema_strategy: string;
+  entities: DBEntity[];
+  migration_strategy: string;
+  data_integrity_notes: string;
+}
+
+export interface APIEndpoint {
+  method: string;
+  path: string;
+  purpose: string;
+  request_body: string;
+  response_shape: string;
+  auth_required: boolean;
+  status_codes: string[];
+}
+
+export interface ApiSpecs {
+  base_url: string;
+  auth_mechanism: string;
+  versioning_strategy: string;
+  endpoints: APIEndpoint[];
+  rate_limiting: string;
+  error_response_format: string;
+}
+
+export interface DesignDiagram {
+  diagram_type: string;
+  title: string;
+  mermaid_code: string;
+  description: string;
+}
+
+export interface DiagramsSection {
+  // ── New fixed-contract format (generated after schema fix) ──────────────
+  er_diagram?: DesignDiagram;
+  class_diagram?: DesignDiagram;
+  component_diagram?: DesignDiagram;
+  // ── Legacy format (designs stored before the schema fix) ─────────────────
+  diagrams?: DesignDiagram[];
+}
+
+/**
+ * Normalizes a DiagramsSection (either new named-slot or legacy array format)
+ * into a canonical ordered array: [ER Diagram, Class Diagram, Component Diagram].
+ * This ensures consistent rendering regardless of which schema version was used
+ * to generate the stored design.
+ */
+export function normalizeDiagrams(ds: DiagramsSection): DesignDiagram[] {
+  // New fixed-contract format: named slots
+  if (ds.er_diagram || ds.class_diagram || ds.component_diagram) {
+    const result: DesignDiagram[] = [];
+    if (ds.er_diagram) result.push(ds.er_diagram);
+    if (ds.class_diagram) result.push(ds.class_diagram);
+    if (ds.component_diagram) result.push(ds.component_diagram);
+    return result;
+  }
+  // Legacy array format: return as-is
+  if (ds.diagrams && ds.diagrams.length > 0) {
+    return ds.diagrams;
+  }
+  return [];
+}
+
+export interface SoftwareDesignSections {
+  overview: DesignOverview;
+  high_level_design: HighLevelDesign;
+  low_level_design: LowLevelDesign;
+  technology_stack: TechStackDesign;
+  folder_structure: FolderStructure;
+  database_design: DatabaseDesign;
+  api_specifications: ApiSpecs;
+  diagrams: DiagramsSection;
+}
+
+export interface SoftwareDesign {
+  id: string;
+  project_id: string;
+  blueprint_version: number;
+  version: number;
+  status: string;
+  sections: SoftwareDesignSections;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SoftwareDesignVersionItem {
+  version: number;
+  blueprint_version: number;
+  status: string;
+  created_at: string;
+}
+
+export interface SoftwareDesignGenerateRequest {
+  blueprint_version: number;
+}

@@ -11,4 +11,7 @@ from app.models.user import User  # noqa
 from app.models.project import Project  # noqa
 from app.models.workspace import ProjectWorkspace  # noqa
 from app.models.questionnaire import ProjectQuestionnaire  # noqa
+from app.models.blueprint import ProjectBlueprint  # noqa
+from app.models.software_design import ProjectSoftwareDesign  # noqa
+
 
