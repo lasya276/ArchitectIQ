@@ -20,7 +20,8 @@ if config.config_file_name:
     fileConfig(config.config_file_name)
 
 # Set database connection URL from settings
-config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_URI)
+database_url = settings.SQLALCHEMY_DATABASE_URI
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 # Target Metadata for 'autogenerate' support
 target_metadata = Base.metadata

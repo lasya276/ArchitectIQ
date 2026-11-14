@@ -1,6 +1,7 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
+from sqlalchemy.engine import URL
 
 class Settings(BaseSettings):
     """
@@ -10,11 +11,12 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # PostgreSQL Configuration
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str
-    POSTGRES_PORT: str
-    POSTGRES_DB: str
+    DATABASE_URL: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_HOST: Optional[str] = None
+    POSTGRES_PORT: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
 
     # ChromaDB Vector Storage Configuration
     CHROMA_DB_PATH: str = "./chroma_data"
@@ -40,8 +42,30 @@ class Settings(BaseSettings):
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        """Construct PostgreSQL SQLAlchemy Connection String."""
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        """Return the configured PostgreSQL URL or construct it from POSTGRES_* settings."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+
+        postgres_settings = (
+            self.POSTGRES_USER,
+            self.POSTGRES_PASSWORD,
+            self.POSTGRES_HOST,
+            self.POSTGRES_PORT,
+            self.POSTGRES_DB,
+        )
+        if not all(postgres_settings):
+            raise ValueError(
+                "Set DATABASE_URL or all five POSTGRES_* variables."
+            )
+
+        return URL.create(
+            "postgresql+psycopg2",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=int(self.POSTGRES_PORT),
+            database=self.POSTGRES_DB,
+        ).render_as_string(hide_password=False)
 
     # Gemini Configuration
     GEMINI_API_KEY: Optional[str] = None

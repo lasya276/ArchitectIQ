@@ -3,7 +3,7 @@ uvicorn[standard]==0.28.0
 pydantic==2.6.4
 pydantic-settings==2.2.1
 email-validator==2.1.1
-sqlalchemy==2.0.28
+sqlalchemy==2.0.33
 asyncpg==0.29.0
 psycopg2-binary==2.9.9
 alembic==1.13.1
@@ -12,6 +12,7 @@ bcrypt==4.1.2
 pyjwt==2.8.0
 python-multipart==0.0.9
 python-dotenv==1.0.1
+requests==2.34.2
 # chromadb==0.4.24  # Disabled: Phase 2 does not require RAG/vector search.
 #                   # Re-enable when upgrading to a NumPy 2.0-compatible version.
 
