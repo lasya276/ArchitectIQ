@@ -1,6 +1,7 @@
 import React from 'react';
 import { WIZARD_STEPS } from '../wizardConfig';
 import { WizardAnswers, FunctionalRequirement } from '../../api/types';
+import { Button } from '../../components/ui/Button';
 
 interface ReviewStepProps {
   answers: WizardAnswers;
@@ -27,15 +28,15 @@ const formatValue = (value: unknown) => {
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({ answers, onEdit, validation = {} }) => {
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Review & Confirm</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Check every section before creating the project.</p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">Review & Confirm</h3>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Verify your project specifications before generating the architecture blueprint.
+        </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {WIZARD_STEPS.map((step, index) => {
           const missing = step.fields.some((field) => {
             if (!field.required) return false;
@@ -50,48 +51,53 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ answers, onEdit, validat
           });
 
           return (
-            <section key={step.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 p-4">
-              <div className="flex items-center justify-between gap-3 mb-3">
+            <div key={step.id} className="py-4">
+              <div className="flex items-center justify-between pb-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{step.title}</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{step.subtitle}</p>
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{step.title}</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{step.subtitle}</p>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onEdit(index)}
-                  className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="h-7 px-2.5 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
                 >
                   Edit
-                </button>
+                </Button>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {step.fields.map((field) => {
                   const value = answers[field.id as keyof WizardAnswers];
                   const error = validation[field.id];
                   return (
-                    <div key={field.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{field.label}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-words">{formatValue(value)}</p>
-                        </div>
-                        {error && <span className="text-[10px] font-medium text-rose-500">Missing</span>}
+                    <div
+                      key={field.id}
+                      className="rounded-md border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800/80 dark:bg-slate-900/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{field.label}</span>
+                        {error && <span className="text-[10px] font-medium text-rose-500">Required</span>}
                       </div>
+                      <p className="mt-1 text-xs font-medium text-slate-900 break-words dark:text-slate-200">
+                        {formatValue(value)}
+                      </p>
                     </div>
                   );
                 })}
-
-                {missing && (
-                  <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                    One or more required fields in this section are still missing.
-                  </p>
-                )}
               </div>
-            </section>
+
+              {missing && (
+                <p className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  One or more required fields in this section need attention.
+                </p>
+              )}
+            </div>
           );
         })}
       </div>
     </div>
   );
 };
+

@@ -9,8 +9,10 @@ from typing import Dict, Any, Optional, List
 import re
 import json
 import logging
+import time
 from google import genai
 from google.genai import types
+from google.genai.errors import ServerError, ClientError
 from pydantic import ValidationError
 
 from app.models.project import Project
@@ -373,33 +375,70 @@ class AIGenerator(ArchitectureGeneratorInterface):
             logger.warning("GEMINI_API_KEY not configured. Falling back to deterministic generator.")
             return DeterministicGroundedGenerator().generate_blueprint(project, workspace, questionnaire)
 
-        try:
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            
-            prompt = self._build_prompt(project, workspace, questionnaire)
-            
-            logger.info(f"Invoking Gemini model {settings.GEMINI_MODEL} for project {project.id}")
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=BlueprintSections,
-                    temperature=0.2, # Low temperature for more analytical/architectural responses
-                ),
-            )
-            
-            if not response.text:
-                raise ValueError("Empty response received from Gemini API")
+        candidate_models = [
+            settings.GEMINI_MODEL,
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.8-flash",
+        ]
+        candidate_models = list(dict.fromkeys(candidate_models))
 
-            # Validate the structured JSON against the existing Pydantic model
-            blueprint_model = BlueprintSections.model_validate_json(response.text)
-            logger.info(f"Successfully generated and validated AI blueprint for project {project.id}")
-            return blueprint_model.model_dump()
-            
-        except (ValidationError, ValueError, Exception) as e:
-            logger.error(f"AI Blueprint generation failed: {str(e)}. Falling back to deterministic generator.")
-            return DeterministicGroundedGenerator().generate_blueprint(project, workspace, questionnaire)
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        prompt = self._build_prompt(project, workspace, questionnaire)
+
+        for model_name in candidate_models:
+            max_attempts = 2
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    logger.info(f"Invoking Gemini model {model_name} for project {project.id} (attempt {attempt}/{max_attempts})")
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=BlueprintSections,
+                            temperature=0.2, # Low temperature for more analytical/architectural responses
+                        ),
+                    )
+
+                    if not response.text:
+                        raise ValueError(f"Empty response received from Gemini API on model {model_name}")
+
+                    raw_json = response.text.strip()
+                    if raw_json.startswith("```"):
+                        lines = raw_json.splitlines()
+                        if lines and lines[0].startswith("```"):
+                            lines = lines[1:]
+                        if lines and lines[-1].strip() == "```":
+                            lines = lines[:-1]
+                        raw_json = "\n".join(lines).strip()
+
+                    # Validate the structured JSON against the existing Pydantic model
+                    blueprint_model = BlueprintSections.model_validate_json(raw_json)
+                    logger.info(f"Successfully generated and validated AI blueprint for project {project.id} using {model_name}")
+                    return blueprint_model.model_dump()
+
+                except ServerError as e:
+                    logger.warning(f"ServerError on blueprint model {model_name} (attempt {attempt}/{max_attempts}): {e}")
+                    if attempt < max_attempts:
+                        time.sleep(1.5 * attempt)
+                except ClientError as e:
+                    if "404" in str(e) or "NOT_FOUND" in str(e):
+                        logger.warning(f"Model {model_name} not found: {e}. Trying fallback.")
+                        break
+                    logger.warning(f"ClientError on blueprint model {model_name}: {e}")
+                    if attempt < max_attempts:
+                        time.sleep(2.0 * attempt)
+                except ValidationError as e:
+                    logger.warning(f"Validation error on blueprint model {model_name}: {e}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Error on blueprint model {model_name}: {e}")
+                    if attempt < max_attempts:
+                        time.sleep(1.0)
+
+        logger.error("AI Blueprint generation failed across candidate models. Falling back to deterministic generator.")
+        return DeterministicGroundedGenerator().generate_blueprint(project, workspace, questionnaire)
 
     def _build_prompt(
         self,

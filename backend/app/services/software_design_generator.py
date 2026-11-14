@@ -10,10 +10,12 @@ Generates structured 8-section software design documents derived from:
 """
 import json
 import logging
-from typing import Dict, Any, Optional
+import time
+from typing import Dict, Any, Optional, List
 
 from google import genai
 from google.genai import types
+from google.genai.errors import ServerError, ClientError
 from pydantic import ValidationError
 
 from app.models.project import Project
@@ -23,6 +25,21 @@ from app.schemas.software_design import SoftwareDesignSections
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _clean_json_text(text: str) -> str:
+    """Extract raw JSON text if wrapped in markdown code fences."""
+    if not text:
+        return ""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        stripped = "\n".join(lines).strip()
+    return stripped
 
 
 class SoftwareDesignGenerator:
@@ -57,7 +74,7 @@ class SoftwareDesignGenerator:
             Dict[str, Any]: The validated software design sections as a dict
 
         Raises:
-            RuntimeError: If GEMINI_API_KEY is not configured
+            RuntimeError: If GEMINI_API_KEY is not configured or all models fail
             Exception: If AI generation or validation fails
         """
         if not settings.GEMINI_API_KEY:
@@ -69,31 +86,101 @@ class SoftwareDesignGenerator:
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
         prompt = self._build_prompt(project, workspace, questionnaire, blueprint_sections, blueprint_version)
 
-        logger.info(
-            f"Invoking Gemini model {settings.GEMINI_MODEL} for Software Design generation — "
-            f"project={project.id}, blueprint_version=v{blueprint_version}"
-        )
+        # Candidate models list with the user/system configured model prioritized
+        candidate_models: List[str] = [
+            settings.GEMINI_MODEL,
+            "gemini-3.5-flash-lite",
+            "gemini-3.6-flash",
+            "gemini-3.8-flash",
+        ]
+        # Deduplicate while preserving order
+        candidate_models = list(dict.fromkeys(candidate_models))
 
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=SoftwareDesignSections,
-                temperature=0.15,  # Low temperature for precise, deterministic software design output
-            ),
-        )
+        last_exception: Optional[Exception] = None
 
-        if not response.text:
-            raise ValueError("Empty response received from Gemini API during software design generation.")
+        for model_name in candidate_models:
+            max_attempts = 2
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    logger.info(
+                        f"Invoking Gemini model '{model_name}' for Software Design generation (attempt {attempt}/{max_attempts}) — "
+                        f"project={project.id}, blueprint_version=v{blueprint_version}"
+                    )
 
-        # Validate structured JSON against the SoftwareDesignSections Pydantic model
-        design_model = SoftwareDesignSections.model_validate_json(response.text)
-        logger.info(
-            f"Successfully generated and validated Software Design for project={project.id} "
-            f"from blueprint v{blueprint_version}"
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=SoftwareDesignSections,
+                            temperature=0.15,  # Low temperature for precise, deterministic software design output
+                        ),
+                    )
+
+                    if not response.text:
+                        raise ValueError(f"Empty response received from Gemini API using model '{model_name}'.")
+
+                    # Strip any markdown code fences before Pydantic validation
+                    clean_json = _clean_json_text(response.text)
+
+                    # Validate structured JSON against the SoftwareDesignSections Pydantic model
+                    design_model = SoftwareDesignSections.model_validate_json(clean_json)
+                    logger.info(
+                        f"Successfully generated and validated Software Design for project={project.id} "
+                        f"from blueprint v{blueprint_version} using model '{model_name}' on attempt {attempt}"
+                    )
+                    return design_model.model_dump()
+
+                except ServerError as e:
+                    # 503 UNAVAILABLE (temporary high demand spike), 500, 504
+                    last_exception = e
+                    logger.warning(
+                        f"Transient ServerError on Gemini model '{model_name}' (attempt {attempt}/{max_attempts}): {e}. "
+                        f"Retrying with exponential backoff..."
+                    )
+                    if attempt < max_attempts:
+                        time.sleep(1.5 * attempt)
+                except ClientError as e:
+                    last_exception = e
+                    # If 404 NOT_FOUND (model deprecated or not available for version), move to next candidate immediately
+                    if "404" in str(e) or "NOT_FOUND" in str(e):
+                        logger.warning(
+                            f"Gemini model '{model_name}' is not found or deprecated: {e}. Moving to next candidate model."
+                        )
+                        break
+                    # If 429 RESOURCE_EXHAUSTED / Quota limit, move to next model immediately (sleeping won't clear daily quota)
+                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "Quota" in str(e):
+                        logger.warning(
+                            f"Gemini model '{model_name}' quota exhausted: {e}. Pivoting to next candidate model immediately."
+                        )
+                        break
+                    logger.warning(
+                        f"ClientError on Gemini model '{model_name}' (attempt {attempt}/{max_attempts}): {e}. Backing off..."
+                    )
+                    if attempt < max_attempts:
+                        time.sleep(2.0 * attempt)
+                except ValidationError as e:
+                    last_exception = e
+                    logger.warning(
+                        f"SoftwareDesignSections validation error on model '{model_name}' (attempt {attempt}/{max_attempts}): {e}"
+                    )
+                    # Break to try next candidate model on schema mismatch
+                    break
+                except Exception as e:
+                    last_exception = e
+                    logger.warning(
+                        f"Unexpected error with Gemini model '{model_name}' (attempt {attempt}/{max_attempts}): {e}"
+                    )
+                    if attempt < max_attempts:
+                        time.sleep(1.0)
+
+        # If all candidate models and retries failed
+        error_msg = (
+            f"Software design AI generation failed across all candidate models ({', '.join(candidate_models)}). "
+            f"Last error: {last_exception}"
         )
-        return design_model.model_dump()
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
     def _build_prompt(
         self,

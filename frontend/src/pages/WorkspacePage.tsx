@@ -4,6 +4,7 @@ import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { 
   ArrowLeft, 
   Save, 
@@ -17,8 +18,7 @@ import {
   Users, 
   UserCheck, 
   Sparkles,
-  LayoutGrid,
-  CheckCircle2
+  LayoutGrid
 } from 'lucide-react';
 import { projectService } from '../services/projectService';
 import { questionnaireService } from '../services/questionnaireService';
@@ -329,40 +329,38 @@ export const WorkspacePage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Top Header Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3">
+      <div className="space-y-6 pb-12">
+        {/* Workspace Top Header Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-start gap-3">
             <button
               id="back-to-dashboard-btn"
               onClick={() => navigate('/dashboard')}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 mt-0.5"
               title="Back to Dashboard"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                  Workspace Specification Editor
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Workspace Specification
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 capitalize">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {status}
-                </span>
+                <span className="text-slate-300 dark:text-slate-700">·</span>
+                <StatusBadge status={status} size="sm" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                 {title || 'Untitled Project'}
-              </h2>
+              </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
             <select
               id="workspace-status-select"
               value={status}
               onChange={e => setStatus(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
             >
               <option value="draft">Draft</option>
               <option value="in_progress">In Progress</option>
@@ -376,16 +374,16 @@ export const WorkspacePage: React.FC = () => {
               isLoading={isSaving}
               variant="outline"
               size="sm"
-              leftIcon={<Save className="w-4 h-4" />}
+              leftIcon={<Save className="w-3.5 h-3.5" />}
             >
-              Save Workspace
+              Save Changes
             </Button>
 
             <Button
               id="generate-architecture-btn"
               onClick={handleInitiateGeneration}
               size="sm"
-              leftIcon={<Sparkles className="w-4 h-4" />}
+              leftIcon={<Sparkles className="w-3.5 h-3.5" />}
             >
               Generate Architecture
             </Button>
@@ -394,26 +392,26 @@ export const WorkspacePage: React.FC = () => {
 
         {/* Notifications / Alerts */}
         {saveSuccessMessage && (
-          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium flex items-center gap-2 animate-fade-in">
-            <Check className="w-4 h-4 shrink-0" />
+          <div className="p-3 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-center gap-2 animate-fade-in">
+            <Check className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <span>{saveSuccessMessage}</span>
           </div>
         )}
 
         {saveErrorMessage && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-2 animate-fade-in">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="p-3 rounded-md bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2 animate-fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
             <span>{saveErrorMessage}</span>
           </div>
         )}
 
-        {/* Workspace vs Blueprint Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+        {/* Primary View Switcher: Specification vs Architecture */}
+        <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800">
           <button
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 -mb-px"
           >
-            <FileText className="w-4 h-4" />
-            <span>Workspace Specification</span>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Specification Document</span>
           </button>
           <button
             onClick={() => {
@@ -423,28 +421,28 @@ export const WorkspacePage: React.FC = () => {
                 handleInitiateGeneration();
               }
             }}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-b-2 border-transparent -mb-px transition-colors"
           >
-            <Sparkles className="w-4 h-4 text-indigo-500" />
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Architecture Blueprint</span>
             {hasBlueprint && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
                 v{blueprintVersion}
               </span>
             )}
           </button>
         </div>
 
-        {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-100 dark:border-slate-800/80 scrollbar-none">
+        {/* Section Navigation Tabs (Segmented / Minimal) */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-100 dark:border-slate-800/80 scrollbar-none">
           {sectionTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               {tab.icon}
@@ -453,14 +451,16 @@ export const WorkspacePage: React.FC = () => {
           ))}
         </div>
 
-        {/* Workspace Form / Editor Sections */}
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Section 1: Project Name & Core Info */}
+        {/* Workspace Form / Structured Document Layout */}
+        <form onSubmit={handleSave} className="space-y-8 max-w-4xl">
+          {/* Section 1: Project Information & Vision */}
           {(activeTab === 'all' || activeTab === 'vision') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <Sparkles className="w-4 h-4" />
-                <span>1. Project Information & Vision</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">1</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Project Information & Vision
+                </h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -474,7 +474,7 @@ export const WorkspacePage: React.FC = () => {
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                     placeholder="Enter project name..."
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                     required
                   />
                 </div>
@@ -489,7 +489,7 @@ export const WorkspacePage: React.FC = () => {
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     placeholder="High-level project summary..."
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-2.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -503,19 +503,21 @@ export const WorkspacePage: React.FC = () => {
                   rows={4}
                   value={vision}
                   onChange={e => setVision(e.target.value)}
-                  placeholder="Define the overarching vision, long-term impact, and core inspiration of the project..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  placeholder="Define the overarching vision, long-term impact, and core purpose of the project..."
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Section 2: Problem Statement */}
           {(activeTab === 'all' || activeTab === 'problem') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <Target className="w-4 h-4" />
-                <span>2. Problem Statement</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">2</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Problem Statement
+                </h3>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -527,18 +529,20 @@ export const WorkspacePage: React.FC = () => {
                   value={problemStatement}
                   onChange={e => setProblemStatement(e.target.value)}
                   placeholder="Detail the pain points, operational friction, or technical gaps this software solves..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Section 3: Requirements */}
           {(activeTab === 'all' || activeTab === 'requirements') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <FileText className="w-4 h-4" />
-                <span>3. Functional & Technical Requirements</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">3</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Functional & Technical Requirements
+                </h3>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -550,18 +554,20 @@ export const WorkspacePage: React.FC = () => {
                   value={requirements}
                   onChange={e => setRequirements(e.target.value)}
                   placeholder="List key functional capabilities, API endpoints, integration flows, and non-functional requirements..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 font-mono"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Section 4: Constraints */}
           {(activeTab === 'all' || activeTab === 'constraints') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <AlertTriangle className="w-4 h-4" />
-                <span>4. Constraints & Boundaries</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">4</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Constraints & Boundaries
+                </h3>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -573,18 +579,20 @@ export const WorkspacePage: React.FC = () => {
                   value={constraints}
                   onChange={e => setConstraints(e.target.value)}
                   placeholder="Specify technology stack restrictions, budget limitations, security compliance rules, latency bounds..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Section 5: Business Goals */}
           {(activeTab === 'all' || activeTab === 'business') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <TrendingUp className="w-4 h-4" />
-                <span>5. Business Goals & Key Results</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">5</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Business Goals & Key Results
+                </h3>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -596,18 +604,20 @@ export const WorkspacePage: React.FC = () => {
                   value={businessGoals}
                   onChange={e => setBusinessGoals(e.target.value)}
                   placeholder="Outline measurable business goals, revenue targets, cost reduction metrics, or performance milestones..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Section 6: Stakeholders */}
           {(activeTab === 'all' || activeTab === 'stakeholders') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <Users className="w-4 h-4" />
-                <span>6. Stakeholders</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">6</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Stakeholders
+                </h3>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -619,18 +629,20 @@ export const WorkspacePage: React.FC = () => {
                   value={stakeholders}
                   onChange={e => setStakeholders(e.target.value)}
                   placeholder="List executive sponsors, product owners, lead architects, compliance leads, and key team members..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Section 7: Target Users */}
           {(activeTab === 'all' || activeTab === 'users') && (
-            <Card className="space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm pb-2 border-b border-slate-100 dark:border-slate-800">
-                <UserCheck className="w-4 h-4" />
-                <span>7. Target Users & Personas</span>
+            <section className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <span className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">7</span>
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
+                  Target Users & Personas
+                </h3>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -642,14 +654,14 @@ export const WorkspacePage: React.FC = () => {
                   value={targetUsers}
                   onChange={e => setTargetUsers(e.target.value)}
                   placeholder="Define primary user segments, technical proficiency level, core usage patterns, and user access roles..."
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
                 />
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Bottom Save Action Bar */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800">
             <Button
               type="button"
               variant="outline"
@@ -664,18 +676,18 @@ export const WorkspacePage: React.FC = () => {
               variant="outline"
               size="sm"
               isLoading={isSaving}
-              leftIcon={<Save className="w-4 h-4" />}
+              leftIcon={<Save className="w-3.5 h-3.5" />}
             >
-              Save All Changes
+              Save Changes
             </Button>
             <Button
               id="bottom-generate-architecture-btn"
               type="button"
               size="sm"
               onClick={handleInitiateGeneration}
-              leftIcon={<Sparkles className="w-4 h-4" />}
+              leftIcon={<Sparkles className="w-3.5 h-3.5" />}
             >
-              Generate Architecture Blueprint →
+              Generate Architecture Blueprint
             </Button>
           </div>
         </form>
@@ -690,7 +702,7 @@ export const WorkspacePage: React.FC = () => {
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               You have unsaved changes in your Workspace Specification. To ensure your architecture blueprint is generated using the most up-to-date requirements, please save your changes before proceeding.
             </p>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -702,7 +714,7 @@ export const WorkspacePage: React.FC = () => {
                 size="sm"
                 isLoading={isSaving}
                 onClick={handleSaveAndGenerate}
-                leftIcon={<Save className="w-4 h-4" />}
+                leftIcon={<Save className="w-3.5 h-3.5" />}
               >
                 Save & Generate Architecture
               </Button>
@@ -719,18 +731,18 @@ export const WorkspacePage: React.FC = () => {
           <div className="space-y-4">
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               An architecture blueprint (v{blueprintVersion}) already exists for this project. Generating architecture will create a new version (
-              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+              <span className="font-bold text-blue-600 dark:text-blue-400">
                 v{(blueprintVersion ?? 1) + 1}
               </span>
               ) based on your latest Workspace Specification.
             </p>
-            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-300">
+            <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 text-xs text-blue-700 dark:text-blue-300">
               <p className="font-semibold">Version History Protection:</p>
               <p className="text-[11px] mt-0.5">
                 Your existing blueprint versions will remain intact and selectable in the version history.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -741,7 +753,7 @@ export const WorkspacePage: React.FC = () => {
               <Button
                 size="sm"
                 onClick={executeGeneration}
-                leftIcon={<Sparkles className="w-4 h-4" />}
+                leftIcon={<Sparkles className="w-3.5 h-3.5" />}
               >
                 Generate Version v{(blueprintVersion ?? 1) + 1}
               </Button>
@@ -758,7 +770,7 @@ export const WorkspacePage: React.FC = () => {
           <div className="space-y-4">
             {generationError ? (
               <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+                <div className="p-3 rounded-md bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-600 dark:text-rose-400">
                   {generationError}
                 </div>
                 <div className="flex justify-end">
@@ -768,22 +780,22 @@ export const WorkspacePage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
-                <div className="flex items-center gap-2 font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="p-4 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                <div className="flex items-center gap-2 font-semibold text-blue-600 dark:text-blue-400">
                   <Spinner size="sm" />
                   <span>Synthesizing Architecture Blueprint...</span>
                 </div>
                 <div className="space-y-2 text-[11px] text-slate-500 dark:text-slate-400 pl-6">
-                  <p className={generationStep >= 1 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={generationStep >= 1 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
                     {generationStep > 1 ? '✓' : '→'} Reading workspace specifications & boundaries
                   </p>
-                  <p className={generationStep >= 2 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={generationStep >= 2 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
                     {generationStep > 2 ? '✓' : generationStep === 2 ? '→' : '○'} Analyzing requirements & component interactions
                   </p>
-                  <p className={generationStep >= 3 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={generationStep >= 3 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
                     {generationStep > 3 ? '✓' : generationStep === 3 ? '→' : '○'} Formulating technology stack & ADR decisions
                   </p>
-                  <p className={generationStep >= 4 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={generationStep >= 4 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
                     {generationStep === 4 ? '✓' : '○'} Persisting blueprint version
                   </p>
                 </div>

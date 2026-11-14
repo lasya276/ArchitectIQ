@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { Modal } from '../components/ui/Modal';
 import { MermaidDiagram } from '../components/ui/MermaidDiagram';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import {
   ArrowLeft,
-  Sparkles,
   Layers,
   Cpu,
   Database,
@@ -20,18 +19,16 @@ import {
   Eye,
   RefreshCw,
   Download,
-  CheckCircle2,
   Server,
-  Code2,
   Lock,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   FileText,
   Workflow,
   ArrowRight,
 } from 'lucide-react';
 import { projectService } from '../services/projectService';
 import { blueprintService } from '../services/blueprintService';
+import { exportService } from '../services/exportService';
 import {
   Project,
   ArchitectureBlueprint,
@@ -57,9 +54,9 @@ export const BlueprintPage: React.FC = () => {
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Active section tab / jump
-  const [activeSection, setActiveSection] = useState<string>('overview');
+  const [activeSection, setActiveSection] = useState<string>('diagram');
 
-  // Expanded ADR and Risk states
+  // Expanded ADR and Risk states (collapsed by default for clean document presentation)
   const [expandedDecisions, setExpandedDecisions] = useState<Record<number, boolean>>({});
   const [expandedRisks, setExpandedRisks] = useState<Record<number, boolean>>({});
 
@@ -69,6 +66,33 @@ export const BlueprintPage: React.FC = () => {
 
   const toggleRisk = (idx: number) => {
     setExpandedRisks((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportVersion, setExportVersion] = useState<number>(1);
+  const [exportFormat, setExportFormat] = useState<'docx' | 'pdf'>('docx');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleOpenExportModal = () => {
+    setExportVersion(selectedVersion ?? blueprint?.version ?? (versions.length > 0 ? versions[0].version : 1));
+    setExportError(null);
+    setShowExportModal(true);
+  };
+
+  const handleExecuteExport = async () => {
+    if (!id) return;
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      await exportService.exportBlueprint(id, exportVersion, exportFormat);
+      setShowExportModal(false);
+    } catch (err: any) {
+      setExportError(err.message || 'Failed to export Architecture Blueprint document.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Load project, versions, and blueprint
@@ -127,15 +151,12 @@ export const BlueprintPage: React.FC = () => {
     setRegenerateStep(1);
 
     try {
-      // Step 1: Read workspace
       await new Promise((r) => setTimeout(r, 400));
       setRegenerateStep(2);
 
-      // Step 2: Synthesize components
       await new Promise((r) => setTimeout(r, 400));
       setRegenerateStep(3);
 
-      // Step 3: Call generation API
       const newBp = await blueprintService.generateBlueprint(id, { increment_version: true });
       setRegenerateStep(4);
       await new Promise((r) => setTimeout(r, 300));
@@ -143,7 +164,6 @@ export const BlueprintPage: React.FC = () => {
       setBlueprint(newBp);
       setSelectedVersion(newBp.version);
 
-      // Refresh version list
       const vers = await blueprintService.getBlueprintVersions(id).catch(() => []);
       setVersions(vers);
 
@@ -156,136 +176,18 @@ export const BlueprintPage: React.FC = () => {
     }
   };
 
-  // Export blueprint as structured Markdown file
-  const handleExportMarkdown = () => {
-    if (!blueprint || !project) return;
-    const { sections } = blueprint;
-
-    const mdContent = `# Architecture Blueprint: ${project.title} (v${blueprint.version})
-Generated on: ${new Date(blueprint.created_at).toLocaleString()}
-Status: ${blueprint.status.toUpperCase()}
-
----
-
-## 1. Architecture Overview
-- **Domain:** ${sections.overview.domain}
-- **Primary Focus:** ${sections.overview.primary_focus}
-- **Scope & Scale:** ${sections.overview.scope}
-
-${sections.overview.summary}
-
----
-
-## 2. Architecture Style & Patterns
-- **Style:** ${sections.architecture_style.style_name}
-- **Pattern:** ${sections.architecture_style.pattern_type}
-
-**Justification:**
-${sections.architecture_style.justification}
-
----
-
-## 3. Technology Stack
-- **Frontend:** ${sections.tech_stack.frontend.join(', ') || 'Not specified'}
-- **Backend:** ${sections.tech_stack.backend.join(', ') || 'Not specified'}
-- **Database:** ${sections.tech_stack.database.join(', ') || 'Not specified'}
-- **DevOps / Infrastructure:** ${sections.tech_stack.devops_infrastructure.join(', ') || 'Not specified'}
-- **Third-Party Services:** ${sections.tech_stack.third_party_services.join(', ') || 'None specified'}
-
----
-
-## 4. System Components
-${sections.components
-  .map(
-    (c) => `### ${c.name} (${c.type})
-- **Responsibility:** ${c.responsibility}
-- **Interfaces:** ${c.interfaces.join(', ')}`
-  )
-  .join('\n\n')}
-
----
-
-## 5. Component Relationships
-${sections.component_relationships
-  .map((r) => `- **${r.source}** → **${r.target}**: ${r.interaction} (${r.protocol})`)
-  .join('\n')}
-
----
-
-## 6. Data Architecture
-- **Storage Strategy:** ${sections.data_architecture.storage_strategy}
-- **Data Stores:** ${sections.data_architecture.data_stores.join(', ')}
-- **Data Flow:** ${sections.data_architecture.data_flow}
-
----
-
-## 7. External Integrations
-${sections.integrations
-  .map((i) => `### ${i.name}
-- **Purpose:** ${i.purpose}
-- **Protocol:** ${i.protocol}`)
-  .join('\n\n')}
-
----
-
-## 8. Security & Quality Considerations
-- **Security Controls:** ${sections.security_and_quality.security_controls.join(', ')}
-- **Quality Attributes:** ${sections.security_and_quality.quality_attributes.join(', ')}
-- **Compliance:** ${sections.security_and_quality.compliance.join(', ')}
-
----
-
-## 9. Architecture Decisions & Rationale (ADR)
-${sections.decisions_and_rationale
-  .map(
-    (d, idx) => `### ADR-${idx + 1}: ${d.decision}
-- **Rationale:** ${d.rationale}
-- **Grounded Requirement:** ${d.grounded_requirement}
-- **Alternatives Considered:** ${d.alternatives_considered.join(', ')}`
-  )
-  .join('\n\n')}
-
----
-
-## 10. Risks & Trade-offs
-${sections.risks_and_tradeoffs
-  .map(
-    (rk) => `### Risk: ${rk.risk}
-- **Impact:** ${rk.impact}
-- **Mitigation:** ${rk.mitigation}
-- **Trade-off:** ${rk.tradeoff}`
-  )
-  .join('\n\n')}
-
----
-
-## 11. Visual Architecture
-\`\`\`mermaid
-${sections.visual_diagram.mermaid_code}
-\`\`\`
-${sections.visual_diagram.description}
-`;
-
-    const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${project.title.replace(/\s+/g, '_')}_Blueprint_v${blueprint.version}.md`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
-
   const navSections = [
-    { id: 'overview', label: '1. Overview', icon: <Eye className="w-3.5 h-3.5" /> },
-    { id: 'style', label: '2. Style & Pattern', icon: <Layers className="w-3.5 h-3.5" /> },
-    { id: 'tech-stack', label: '3. Tech Stack', icon: <Cpu className="w-3.5 h-3.5" /> },
-    { id: 'components', label: '4. Components', icon: <Server className="w-3.5 h-3.5" /> },
-    { id: 'relationships', label: '5. Relationships', icon: <GitMerge className="w-3.5 h-3.5" /> },
-    { id: 'data-arch', label: '6. Data Arch', icon: <Database className="w-3.5 h-3.5" /> },
-    { id: 'integrations', label: '7. Integrations', icon: <Plug className="w-3.5 h-3.5" /> },
-    { id: 'security', label: '8. Security & Quality', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-    { id: 'decisions', label: '9. Decisions (ADR)', icon: <FileCheck2 className="w-3.5 h-3.5" /> },
-    { id: 'risks', label: '10. Risks & Trade-offs', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
-    { id: 'diagram', label: '11. Visual Diagram', icon: <Workflow className="w-3.5 h-3.5" /> },
+    { id: 'diagram', label: 'Architecture Diagram', icon: <Workflow className="w-3.5 h-3.5" /> },
+    { id: 'overview', label: 'Overview', icon: <Eye className="w-3.5 h-3.5" /> },
+    { id: 'tech-stack', label: 'Technology Stack', icon: <Cpu className="w-3.5 h-3.5" /> },
+    { id: 'style', label: 'Style & Pattern', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'decisions', label: 'ADR Decisions', icon: <FileCheck2 className="w-3.5 h-3.5" /> },
+    { id: 'components', label: 'Components', icon: <Server className="w-3.5 h-3.5" /> },
+    { id: 'relationships', label: 'Interactions', icon: <GitMerge className="w-3.5 h-3.5" /> },
+    { id: 'data-arch', label: 'Data Architecture', icon: <Database className="w-3.5 h-3.5" /> },
+    { id: 'integrations', label: 'Integrations', icon: <Plug className="w-3.5 h-3.5" /> },
+    { id: 'security', label: 'Security & Quality', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { id: 'risks', label: 'Risks & Trade-offs', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
   ];
 
   const scrollToSection = (sectionId: string) => {
@@ -300,9 +202,9 @@ ${sections.visual_diagram.description}
     return (
       <DashboardLayout>
         <div className="py-24 flex flex-col items-center justify-center gap-3">
-          <Spinner size="lg" className="text-indigo-600" />
+          <Spinner size="lg" className="text-brand-600" />
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Loading Architecture Blueprint dashboard...
+            Loading Architecture Blueprint...
           </p>
         </div>
       </DashboardLayout>
@@ -312,35 +214,33 @@ ${sections.visual_diagram.description}
   if (error || !project) {
     return (
       <DashboardLayout>
-        <div className="py-16 text-center">
-          <Card className="max-w-md mx-auto p-6">
-            <div className="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-500 mx-auto flex items-center justify-center mb-3">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Blueprint Not Found
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
-              {error || 'No architecture blueprint has been generated yet for this project.'}
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`/workspace/${id}`)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Back to Workspace
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => handleRegenerate()}
-                leftIcon={<Sparkles className="w-4 h-4" />}
-              >
-                Generate Blueprint
-              </Button>
-            </div>
-          </Card>
+        <div className="py-16 text-center max-w-md mx-auto">
+          <div className="w-10 h-10 rounded-md bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 mx-auto flex items-center justify-center mb-3">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+            Blueprint Not Found
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+            {error || 'No architecture blueprint has been generated yet for this project.'}
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/workspace/${id}`)}
+              leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}
+            >
+              Back to Workspace
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleRegenerate()}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              Generate Blueprint
+            </Button>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -350,49 +250,48 @@ ${sections.visual_diagram.description}
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 pb-12">
-        {/* Top Header Bar */}
+      <div className="space-y-6 pb-16">
+        {/* Page Header Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <button
               id="back-to-workspace-btn"
               onClick={() => navigate(`/workspace/${id}`)}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="mt-1 p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
               title="Back to Workspace"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                  Architecture Blueprint Dashboard
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Architecture Blueprint
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  <CheckCircle2 className="w-3 h-3" />
+                <span className="text-slate-300 dark:text-slate-700">•</span>
+                <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">
                   v{blueprint?.version ?? 1}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 capitalize">
-                  {blueprint?.status}
-                </span>
+                <StatusBadge status={blueprint?.status || 'draft'} />
               </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mt-0.5">
                 {project.title}
-              </h2>
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Generated from project requirements and domain specifications.
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Version Selector Dropdown */}
             {versions.length > 1 && (
               <div className="flex items-center gap-1.5">
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Version:
-                </label>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Version:</span>
                 <select
                   id="blueprint-version-select"
                   value={selectedVersion ?? 1}
                   onChange={(e) => handleSelectVersion(Number(e.target.value))}
-                  className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                 >
                   {versions.map((v) => (
                     <option key={v.version} value={v.version}>
@@ -407,10 +306,10 @@ ${sections.visual_diagram.description}
               id="export-blueprint-btn"
               variant="outline"
               size="sm"
-              onClick={handleExportMarkdown}
+              onClick={handleOpenExportModal}
               leftIcon={<Download className="w-3.5 h-3.5" />}
             >
-              Export Blueprint
+              Export
             </Button>
 
             <Button
@@ -420,7 +319,7 @@ ${sections.visual_diagram.description}
               onClick={() => setShowRegenerateModal(true)}
               leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
             >
-              Regenerate Architecture
+              Regenerate
             </Button>
 
             <Button
@@ -437,37 +336,45 @@ ${sections.visual_diagram.description}
           </div>
         </div>
 
-        {/* Workspace vs Blueprint Navigation Tabs */}
+        {/* View Switcher Tabs */}
         <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
           <button
             onClick={() => navigate(`/workspace/${id}`)}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <FileText className="w-4 h-4 text-slate-400" />
+            <FileText className="w-3.5 h-3.5 text-slate-400" />
             <span>Workspace Specification</span>
           </button>
           <button
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300"
           >
-            <Sparkles className="w-4 h-4" />
+            <Workflow className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
             <span>Architecture Blueprint</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+            <span className="ml-1 text-[11px] opacity-75 font-semibold">
               v{blueprint?.version ?? 1}
             </span>
           </button>
+          <button
+            onClick={() => navigate(`/workspace/${id}/software-design`, {
+              state: { blueprintVersion: blueprint?.version ?? selectedVersion ?? 1 }
+            })}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Layers className="w-3.5 h-3.5 text-slate-400" />
+            <span>Software Design</span>
+          </button>
         </div>
 
-        {/* Quick Jump Section Links */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-100 dark:border-slate-800/80 scrollbar-none">
+        {/* Quick Navigation Anchor Bar */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-100 dark:border-slate-800/80 scrollbar-none">
           {navSections.map((sec) => (
             <button
               key={sec.id}
               onClick={() => scrollToSection(sec.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeSection === sec.id
-                  ? 'bg-slate-200 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${activeSection === sec.id
+                  ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                }`}
             >
               {sec.icon}
               <span>{sec.label}</span>
@@ -475,510 +382,209 @@ ${sections.visual_diagram.description}
           ))}
         </div>
 
-        {/* Main 11 Blueprint Sections Content */}
         {sections && (
-          <div className="space-y-6">
-            {/* Section 1: Overview */}
-            <Card id="overview" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Eye className="w-4 h-4" />
-                  <span>1. Architecture Overview</span>
+          <div className="pt-6 space-y-14">
+            {/* HERO SECTION: Architecture Visualization Workspace (Contained Workspace Exception) */}
+            <div id="diagram" className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    System Architecture
+                  </span>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 tracking-tight">
+                    Component Boundary & Architecture Diagram
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
+                    {sections.visual_diagram.description || 'Top-level architectural component visualization and boundary mapping.'}
+                  </p>
                 </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Grounded in Project & Vision
+                <span className="px-2.5 py-1 rounded text-xs font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  {sections.visual_diagram.diagram_type}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              {/* Large Diagram Canvas Workspace */}
+              <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-8 dark:border-slate-800 dark:bg-slate-950/60 shadow-sm">
+                <MermaidDiagram
+                  code={sections.visual_diagram.mermaid_code}
+                  diagramIndex={0}
+                />
+              </div>
+            </div>
+
+            {/* Section 1: Executive Overview */}
+            <section id="overview" className="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  01. Executive Overview
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Grounded in Project Scope</span>
+              </div>
+
+              {/* Editorial 3-Column Scope Matrix without cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 py-3 border-y border-slate-200 dark:border-slate-800">
+                <div className="sm:pr-8 py-2 sm:py-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Domain
                   </span>
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                  <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {sections.overview.domain}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="sm:px-8 py-2 sm:py-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Primary Focus
                   </span>
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                  <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {sections.overview.primary_focus}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="sm:pl-8 py-2 sm:py-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Scope Target
                   </span>
-                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                  <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {sections.overview.scope}
                   </p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Executive Architecture Summary
-                </label>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+              {/* Architecture Summary Document Flow */}
+              <div className="space-y-2 pt-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                  Architecture Summary
+                </span>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap max-w-4xl">
                   {sections.overview.summary}
                 </p>
               </div>
-            </Card>
+            </section>
 
-            {/* Section 2: Architecture Style / Pattern */}
-            <Card id="style" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Layers className="w-4 h-4" />
-                  <span>2. Architecture Style & Design Patterns</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Structural Paradigm
-                </span>
+            {/* Section 2: Technology Stack & Ecosystem */}
+            <section id="tech-stack" className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  02. Technology Stack & Ecosystem
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Selected Frameworks & Platforms</span>
               </div>
 
-              <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                    Selected Architectural Style
-                  </span>
-                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                    {sections.architecture_style.style_name}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pattern: {sections.architecture_style.pattern_type}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Architectural Justification & Grounding
-                </label>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  {sections.architecture_style.justification}
-                </p>
-              </div>
-            </Card>
-
-            {/* Section 3: Technology Stack */}
-            <Card id="tech-stack" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Cpu className="w-4 h-4" />
-                  <span>3. Technology Stack Breakdown</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Grounded in Platforms & Constraints
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Frontend */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-sky-600 dark:text-sky-400">
-                    <Code2 className="w-3.5 h-3.5" />
-                    <span>Client & Frontend</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.tech_stack.frontend.map((item, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Backend */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                    <Server className="w-3.5 h-3.5" />
-                    <span>API & Backend Layer</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.tech_stack.backend.map((item, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Database */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    <Database className="w-3.5 h-3.5" />
-                    <span>Data Tier & Storage</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.tech_stack.database.map((item, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* DevOps / Infrastructure */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400">
-                    <Workflow className="w-3.5 h-3.5" />
-                    <span>DevOps & Cloud Infrastructure</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.tech_stack.devops_infrastructure.map((item, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Third-Party */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2 md:col-span-2 lg:col-span-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400">
-                    <Plug className="w-3.5 h-3.5" />
-                    <span>Third-Party & External Services</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.tech_stack.third_party_services.map((item, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Section 4: System Components */}
-            <Card id="components" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Server className="w-4 h-4" />
-                  <span>4. System Components & Responsibilities</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  {sections.components.length} Core Modules
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {sections.components.map((comp, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                        {comp.name}
-                      </h4>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 whitespace-nowrap">
-                        {comp.type}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      {comp.responsibility}
-                    </p>
-                    {comp.interfaces.length > 0 && (
-                      <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
-                        <span className="text-[10px] font-medium text-slate-400">Interfaces:</span>
-                        {comp.interfaces.map((intf, i) => (
-                          <span
-                            key={i}
-                            className="px-1.5 py-0.5 rounded text-[10px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
-                          >
-                            {intf}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Section 5: Component Relationships */}
-            <Card id="relationships" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <GitMerge className="w-4 h-4" />
-                  <span>5. Component Interaction & Communication Flows</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Data & Protocol Paths
-                </span>
-              </div>
-
+              {/* Clean Technical Table without Card Wrapper */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                      <th className="py-2.5 px-3 font-semibold">Source Component</th>
-                      <th className="py-2.5 px-3 font-semibold">Target Component</th>
-                      <th className="py-2.5 px-3 font-semibold">Interaction Description</th>
-                      <th className="py-2.5 px-3 font-semibold">Protocol</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                    {sections.component_relationships.map((rel, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/30">
-                        <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-slate-200">
-                          {rel.source}
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {[
+                      { label: 'Frontend / Client', items: sections.tech_stack.frontend },
+                      { label: 'API & Backend', items: sections.tech_stack.backend },
+                      { label: 'Database & Storage', items: sections.tech_stack.database },
+                      { label: 'DevOps & Cloud', items: sections.tech_stack.devops_infrastructure },
+                      { label: 'External Services', items: sections.tech_stack.third_party_services },
+                    ].filter((row) => row.items.length > 0).map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
+                        <td className="py-3.5 pr-8 font-semibold text-slate-800 dark:text-slate-200 w-1/4 align-top">
+                          {row.label}
                         </td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-slate-200">
-                          {rel.target}
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
-                          {rel.interaction}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 whitespace-nowrap">
-                            {rel.protocol}
-                          </span>
+                        <td className="py-3.5">
+                          <div className="flex flex-wrap gap-2">
+                            {row.items.map((item, i) => (
+                              <span
+                                key={i}
+                                className="px-2.5 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60"
+                              >
+                                {item}
+                              </span>
+                            ))}
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </section>
 
-            {/* Section 6: Data Architecture */}
-            <Card id="data-arch" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Database className="w-4 h-4" />
-                  <span>6. Data Architecture & Persistence Strategy</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Storage & Consistency
-                </span>
+            {/* Section 3: Architecture Style & Patterns */}
+            <section id="style" className="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  03. Architecture Style & Design Patterns
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Structural Paradigm</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Storage Strategy & Model
-                  </label>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {sections.data_architecture.storage_strategy}
+              {/* Editorial Typography Layout */}
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Architectural Paradigm
+                  </span>
+                  <h4 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    {sections.architecture_style.style_name}
+                  </h4>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 pt-1">
+                    Pattern: <strong className="text-slate-900 dark:text-slate-200 font-semibold">{sections.architecture_style.pattern_type}</strong>
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Target Data Stores
-                  </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.data_architecture.data_stores.map((ds, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
-                      >
-                        {ds}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-1.5 md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    End-to-End Data Flow
-                  </label>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-mono">
-                    {sections.data_architecture.data_flow}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                    Justification &amp; Trade-off Context
+                  </span>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed max-w-4xl">
+                    {sections.architecture_style.justification}
                   </p>
                 </div>
               </div>
-            </Card>
+            </section>
 
-            {/* Section 7: External Integrations */}
-            <Card id="integrations" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Plug className="w-4 h-4" />
-                  <span>7. External Integrations</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  {sections.integrations.length} Services
-                </span>
+            {/* Section 4: Architecture Decision Records (ADR) */}
+            <section id="decisions" className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  04. Architecture Decision Records (ADR)
+                </h3>
+                <span className="text-xs font-medium text-slate-400">{sections.decisions_and_rationale.length} Documented Decisions</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {sections.integrations.map((intg, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                        {intg.name}
-                      </h4>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                        {intg.protocol}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      {intg.purpose}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Section 8: Security & Quality */}
-            <Card id="security" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>8. Security & Quality Considerations</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Governance & Non-Functional
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Security Controls */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400">
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Security Controls</span>
-                  </div>
-                  <ul className="space-y-1.5">
-                    {sections.security_and_quality.security_controls.map((ctrl, i) => (
-                      <li
-                        key={i}
-                        className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1.5"
-                      >
-                        <span className="text-rose-500 mt-0.5">•</span>
-                        <span>{ctrl}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Quality Attributes */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Quality Attributes</span>
-                  </div>
-                  <ul className="space-y-1.5">
-                    {sections.security_and_quality.quality_attributes.map((qa, i) => (
-                      <li
-                        key={i}
-                        className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1.5"
-                      >
-                        <span className="text-emerald-500 mt-0.5">•</span>
-                        <span>{qa}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Compliance */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                    <FileCheck2 className="w-3.5 h-3.5" />
-                    <span>Compliance Standards</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sections.security_and_quality.compliance.map((cmp, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-1 rounded text-[11px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20"
-                      >
-                        {cmp}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Section 9: Architecture Decisions & Rationale (ADR) */}
-            <Card id="decisions" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <FileCheck2 className="w-4 h-4" />
-                  <span>9. Architecture Decisions & Rationale (ADR)</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  {sections.decisions_and_rationale.length} Key Decisions
-                </span>
-              </div>
-
-              <div className="space-y-3">
+              {/* Accordion / Document Style with subtle horizontal dividers */}
+              <div className="divide-y divide-slate-200 dark:divide-slate-800 border-y border-slate-200 dark:border-slate-800">
                 {sections.decisions_and_rationale.map((adr, idx) => {
-                  const isExpanded = expandedDecisions[idx] ?? true;
+                  const isExpanded = expandedDecisions[idx] ?? false;
                   return (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 p-3.5 transition-colors"
-                    >
-                      <div
+                    <div key={idx} className="py-3">
+                      <button
+                        type="button"
                         onClick={() => toggleDecision(idx)}
-                        className="flex items-center justify-between gap-3 cursor-pointer select-none"
+                        className="w-full flex items-center justify-between gap-4 text-left py-1 hover:text-brand-600 transition-colors group select-none"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
-                            ADR-{idx + 1}
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <span className="font-mono text-xs font-semibold text-brand-600 dark:text-brand-400 shrink-0">
+                            ADR-{String(idx + 1).padStart(2, '0')}
                           </span>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                             {adr.decision}
-                          </h4>
+                          </span>
                         </div>
-                        <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                      </div>
+                        <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                      </button>
 
                       {isExpanded && (
-                        <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2 text-xs">
+                        <div className="pl-14 pr-4 pt-3 pb-2 space-y-3 text-xs">
                           <div>
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                              Rationale & Justification:
-                            </span>
-                            <p className="text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
-                              {adr.rationale}
-                            </p>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">Rationale:</span>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-4xl">{adr.rationale}</p>
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                              Grounded Requirement:
-                            </span>
-                            <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                              {adr.grounded_requirement}
-                            </p>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">Requirement Grounding:</span>
+                            <p className="text-slate-500 dark:text-slate-400">{adr.grounded_requirement}</p>
                           </div>
                           {adr.alternatives_considered.length > 0 && (
-                            <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                              <span className="font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
-                                Alternatives Considered:
-                              </span>
+                            <div className="flex items-center gap-2 flex-wrap pt-1">
+                              <span className="font-medium text-slate-500 dark:text-slate-400 text-xs">Alternatives Rejected:</span>
                               {adr.alternatives_considered.map((alt, i) => (
                                 <span
                                   key={i}
-                                  className="px-2 py-0.5 rounded text-[10px] bg-slate-200/70 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 line-through"
+                                  className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600 line-through dark:bg-slate-800 dark:text-slate-400"
                                 >
                                   {alt}
                                 </span>
@@ -991,68 +597,301 @@ ${sections.visual_diagram.description}
                   );
                 })}
               </div>
-            </Card>
+            </section>
 
-            {/* Section 10: Risks & Trade-offs */}
-            <Card id="risks" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>10. Risks & Trade-offs</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Mitigations & Balances
-                </span>
+            {/* Section 5: System Components & Responsibilities */}
+            <section id="components" className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  05. System Components & Responsibilities
+                </h3>
+                <span className="text-xs font-medium text-slate-400">{sections.components.length} Core Modules</span>
               </div>
 
-              <div className="space-y-3">
-                {sections.risks_and_tradeoffs.map((rk, idx) => {
-                  const isExpanded = expandedRisks[idx] ?? true;
-                  return (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5"
-                    >
-                      <div
-                        onClick={() => toggleRisk(idx)}
-                        className="flex items-center justify-between gap-3 cursor-pointer select-none"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                            Risk #{idx + 1}
-                          </span>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                            {rk.risk}
-                          </h4>
-                        </div>
-                        <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
+              {/* Numbered 2-Column Document List */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
+                {sections.components.map((comp, idx) => (
+                  <div key={idx} className="py-3 border-b border-slate-100 dark:border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wide">
+                          {comp.name}
+                        </h4>
                       </div>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {comp.type}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 pl-7 leading-relaxed">
+                      {comp.responsibility}
+                    </p>
+                    {comp.interfaces.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap pl-7 pt-1">
+                        <span className="text-[11px] text-slate-400">Interfaces:</span>
+                        {comp.interfaces.map((intf, i) => (
+                          <span
+                            key={i}
+                            className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                          >
+                            {intf}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Section 6: Component Relationships */}
+            <section id="relationships" className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  06. Interaction & Communication Flows
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Protocol & Channel Mapping</span>
+              </div>
+
+              {/* Clean Technical Table without Card Container */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                      <th className="py-2.5 pr-4">Source</th>
+                      <th className="py-2.5 pr-4">Target</th>
+                      <th className="py-2.5 pr-4">Interaction Description</th>
+                      <th className="py-2.5">Protocol</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {sections.component_relationships.map((rel, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                        <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-slate-200">
+                          {rel.source}
+                        </td>
+                        <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-slate-200">
+                          {rel.target}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+                          {rel.interaction}
+                        </td>
+                        <td className="py-3">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                            {rel.protocol}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            {/* Section 7: Data Architecture & Persistence */}
+            <section id="data-arch" className="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  07. Data Architecture & Persistence Strategy
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Storage & Flow</span>
+              </div>
+
+              {/* Editorial 2-Column Storage Strategy */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Storage Strategy & Model
+                  </span>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {sections.data_architecture.storage_strategy}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Target Data Stores
+                  </span>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {sections.data_architecture.data_stores.map((ds, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60"
+                      >
+                        {ds}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* End-to-End Data Flow */}
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-2">
+                  End-to-End Data Flow
+                </span>
+                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded text-xs font-mono text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 leading-relaxed overflow-x-auto">
+                  {sections.data_architecture.data_flow}
+                </div>
+              </div>
+            </section>
+
+            {/* Section 8: External Integrations */}
+            <section id="integrations" className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  08. External Integrations
+                </h3>
+                <span className="text-xs font-medium text-slate-400">{sections.integrations.length} Services</span>
+              </div>
+
+              {/* Technical Service Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold uppercase text-[11px] tracking-wider">
+                      <th className="py-2.5 pr-6 w-1/4">Service Name</th>
+                      <th className="py-2.5 pr-6 w-28">Protocol</th>
+                      <th className="py-2.5">Purpose &amp; Scope</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {sections.integrations.map((intg, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                        <td className="py-3 pr-6 font-semibold text-slate-900 dark:text-white">
+                          {intg.name}
+                        </td>
+                        <td className="py-3 pr-6">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                            {intg.protocol}
+                          </span>
+                        </td>
+                        <td className="py-3 text-slate-600 dark:text-slate-400 leading-relaxed">
+                          {intg.purpose}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            {/* Section 9: Security & Quality Considerations */}
+            <section id="security" className="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  09. Security & Quality Considerations
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Non-Functional & Compliance</span>
+              </div>
+
+              {/* 3 Editorial Columns with subtle dividers */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800">
+                <div className="space-y-3">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 uppercase tracking-wide">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    Security Controls
+                  </span>
+                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                    {sections.security_and_quality.security_controls.map((ctrl, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-slate-400 mt-0.5">—</span>
+                        <span className="leading-relaxed">{ctrl}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="md:pl-8 space-y-3 pt-4 md:pt-0">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 uppercase tracking-wide">
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+                    Quality Attributes
+                  </span>
+                  <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                    {sections.security_and_quality.quality_attributes.map((qa, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-slate-400 mt-0.5">—</span>
+                        <span className="leading-relaxed">{qa}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="md:pl-8 space-y-3 pt-4 md:pt-0">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 uppercase tracking-wide">
+                    <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
+                    Compliance Standards
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {sections.security_and_quality.compliance.map((cmp, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60"
+                      >
+                        {cmp}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 10: Risks & Trade-offs */}
+            <section id="risks" className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  10. Risks & Architectural Trade-offs
+                </h3>
+                <span className="text-xs font-medium text-slate-400">Mitigations & Balances</span>
+              </div>
+
+              {/* Accordion Document Rows matching ADR pattern */}
+              <div className="divide-y divide-slate-200 dark:divide-slate-800 border-y border-slate-200 dark:border-slate-800">
+                {sections.risks_and_tradeoffs.map((rk, idx) => {
+                  const isExpanded = expandedRisks[idx] ?? false;
+                  return (
+                    <div key={idx} className="py-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleRisk(idx)}
+                        className="w-full flex items-center justify-between gap-4 text-left py-1 hover:text-amber-600 transition-colors group select-none"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <span className="font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                            RISK-{String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                            {rk.risk}
+                          </span>
+                        </div>
+                        <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                      </button>
 
                       {isExpanded && (
-                        <div className="mt-3 pt-3 border-t border-amber-500/15 space-y-2 text-xs">
+                        <div className="pl-14 pr-4 pt-3 pb-2 space-y-3 text-xs">
                           <div>
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
                               System Impact:
                             </span>
-                            <p className="text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-4xl">
                               {rk.impact}
                             </p>
                           </div>
                           <div>
-                            <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                            <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
                               Mitigation Strategy:
                             </span>
-                            <p className="text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-4xl">
                               {rk.mitigation}
                             </p>
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                              Architectural Trade-off:
+                            <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
+                              Trade-off:
                             </span>
-                            <p className="text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-4xl">
                               {rk.tradeoff}
                             </p>
                           </div>
@@ -1062,30 +901,7 @@ ${sections.visual_diagram.description}
                   );
                 })}
               </div>
-            </Card>
-
-            {/* Section 11: Visual Architecture */}
-            <Card id="diagram" className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                  <Workflow className="w-4 h-4" />
-                  <span>11. Visual Architecture Preview</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">
-                  {sections.visual_diagram.diagram_type}
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {sections.visual_diagram.description}
-                </p>
-                <MermaidDiagram
-                  code={sections.visual_diagram.mermaid_code}
-                  diagramIndex={0}
-                />
-              </div>
-            </Card>
+            </section>
           </div>
         )}
 
@@ -1095,51 +911,51 @@ ${sections.visual_diagram.description}
           onClose={() => !isRegenerating && setShowRegenerateModal(false)}
           title="Regenerate Architecture Blueprint"
         >
-          <div className="space-y-4">
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Regenerating will synthesize a new architecture blueprint version (
-              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+          <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+            <p className="leading-relaxed">
+              Synthesize a new architecture blueprint version (
+              <strong className="text-brand-600 dark:text-brand-400">
                 v{(versions.length > 0 ? versions[0].version : 1) + 1}
-              </span>
-              ) based on the latest Workspace Specification.
+              </strong>
+              ) based on your current workspace specifications.
             </p>
 
-            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
-              <p className="font-semibold">Versioning Protection:</p>
+            <div className="p-3 rounded-md bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 space-y-1">
+              <p className="font-medium text-slate-900 dark:text-slate-200">Version History:</p>
               <p className="text-[11px]">
-                Your previous blueprint versions (v1..v{blueprint?.version}) will remain intact and accessible in the version dropdown.
+                Your previous blueprint versions (v1..v{blueprint?.version}) will remain preserved and selectable.
               </p>
             </div>
 
             {generationError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+              <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400">
                 {generationError}
               </div>
             )}
 
             {isRegenerating ? (
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-                <div className="flex items-center gap-2 font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="p-4 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                <div className="flex items-center gap-2 font-semibold text-brand-600 dark:text-brand-400">
                   <Spinner size="sm" />
                   <span>Synthesizing Architecture Blueprint...</span>
                 </div>
-                <div className="space-y-1.5 text-[11px] text-slate-500 dark:text-slate-400 pl-6">
-                  <p className={regenerateStep >= 1 ? 'text-emerald-600 font-semibold' : ''}>
+                <div className="space-y-1 text-[11px] text-slate-500 dark:text-slate-400 pl-6">
+                  <p className={regenerateStep >= 1 ? 'text-emerald-600 font-semibold dark:text-emerald-400' : ''}>
                     {regenerateStep > 1 ? '✓' : '→'} Reading workspace specifications & boundaries
                   </p>
-                  <p className={regenerateStep >= 2 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={regenerateStep >= 2 ? 'text-emerald-600 font-semibold dark:text-emerald-400' : ''}>
                     {regenerateStep > 2 ? '✓' : regenerateStep === 2 ? '→' : '○'} Analyzing requirements & component interactions
                   </p>
-                  <p className={regenerateStep >= 3 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={regenerateStep >= 3 ? 'text-emerald-600 font-semibold dark:text-emerald-400' : ''}>
                     {regenerateStep > 3 ? '✓' : regenerateStep === 3 ? '→' : '○'} Formulating technology stack & ADR decisions
                   </p>
-                  <p className={regenerateStep >= 4 ? 'text-emerald-600 font-semibold' : ''}>
+                  <p className={regenerateStep >= 4 ? 'text-emerald-600 font-semibold dark:text-emerald-400' : ''}>
                     {regenerateStep === 4 ? '✓' : '○'} Persisting new blueprint version
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -1150,12 +966,126 @@ ${sections.visual_diagram.description}
                 <Button
                   size="sm"
                   onClick={handleRegenerate}
-                  leftIcon={<Sparkles className="w-3.5 h-3.5" />}
                 >
                   Generate Version v{(versions.length > 0 ? versions[0].version : 1) + 1}
                 </Button>
               </div>
             )}
+          </div>
+        </Modal>
+
+        {/* Export Architecture Blueprint Modal */}
+        <Modal
+          isOpen={showExportModal}
+          onClose={() => !isExporting && setShowExportModal(false)}
+          title="Export Architecture Blueprint"
+        >
+          <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+              Export an authoritative, implementation-ready document for academic reviews, engineering handovers, and technical presentations.
+            </p>
+
+            {/* Export Scope: Blueprint Only */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Export Scope
+              </label>
+              <div className="p-2.5 rounded-md border border-brand-200 dark:border-brand-900/40 bg-brand-50/50 dark:bg-brand-950/20 text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span className="font-medium text-xs">Architecture Blueprint Only</span>
+                <span className="text-[11px] text-brand-600 dark:text-brand-400 font-semibold">Active Page</span>
+              </div>
+            </div>
+
+            {/* Blueprint Version Selector */}
+            <div className="space-y-1.5">
+              <label htmlFor="export-blueprint-version" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Select Blueprint Version
+              </label>
+              <select
+                id="export-blueprint-version"
+                value={exportVersion}
+                onChange={(e) => setExportVersion(Number(e.target.value))}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              >
+                {versions.map((v) => (
+                  <option key={v.version} value={v.version}>
+                    Version {v.version} ({new Date(v.created_at).toLocaleDateString()}) {v.version === selectedVersion ? '— Current' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Format Selector */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Export Format
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  id="select-format-docx"
+                  onClick={() => setExportFormat('docx')}
+                  className={`flex items-center gap-2.5 p-3 rounded-md border text-left transition-colors ${
+                    exportFormat === 'docx'
+                      ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-950/30 text-brand-900 dark:text-brand-100 ring-1 ring-brand-500'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="w-7 h-7 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
+                    W
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs">Word Document</div>
+                    <div className="text-[10px] text-slate-400">Editable .docx format</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  id="select-format-pdf"
+                  onClick={() => setExportFormat('pdf')}
+                  className={`flex items-center gap-2.5 p-3 rounded-md border text-left transition-colors ${
+                    exportFormat === 'pdf'
+                      ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-950/30 text-brand-900 dark:text-brand-100 ring-1 ring-brand-500'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="w-7 h-7 rounded bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs shrink-0">
+                    PDF
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs">PDF Document</div>
+                    <div className="text-[10px] text-slate-400">High-resolution .pdf</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {exportError && (
+              <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400 text-xs">
+                {exportError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+                onClick={() => setShowExportModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                id="confirm-export-blueprint-btn"
+                size="sm"
+                isLoading={isExporting}
+                onClick={handleExecuteExport}
+                leftIcon={<Download className="w-3.5 h-3.5" />}
+              >
+                Export Document
+              </Button>
+            </div>
           </div>
         </Modal>
       </div>

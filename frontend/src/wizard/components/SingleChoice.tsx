@@ -22,9 +22,9 @@ export const SingleChoice: React.FC<SingleChoiceProps> = ({
   error,
 }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <div>
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{label}</p>
+        <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100">{label}</p>
         {helperText && (
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{helperText}</p>
         )}
@@ -45,24 +45,24 @@ export const SingleChoice: React.FC<SingleChoiceProps> = ({
               onClick={() => onChange(opt.value)}
               aria-checked={selected}
               aria-label={opt.label}
-              className={`group flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${
+              className={`group flex w-full items-center gap-3 rounded-md border px-3.5 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-600 ${
                 selected
-                  ? 'border-indigo-500/70 bg-indigo-500/10 text-indigo-700 dark:text-indigo-200 shadow-sm shadow-indigo-500/10'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500/50 dark:hover:bg-indigo-950/30'
+                  ? 'border-blue-600 bg-blue-50/50 text-blue-950 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-700 font-medium'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-800/40'
               }`}
             >
               <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                   selected
-                    ? 'border-indigo-500 bg-indigo-500'
+                    ? 'border-blue-600 bg-blue-600'
                     : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800'
                 }`}
               >
-                {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                {selected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
               </span>
 
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium leading-snug">{opt.label}</span>
+                <span className="block text-xs sm:text-sm">{opt.label}</span>
                 {opt.icon && (
                   <span className="mt-0.5 block text-[11px] text-slate-500 dark:text-slate-400">{opt.icon}</span>
                 )}

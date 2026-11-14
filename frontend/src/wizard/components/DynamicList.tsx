@@ -59,7 +59,7 @@ export const DynamicList: React.FC<DynamicListProps> = ({
   return (
     <div className="space-y-3">
       <div>
-        <label htmlFor={fieldId} className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
+        <label htmlFor={fieldId} className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
           {label}
         </label>
         {helperText && (
@@ -72,48 +72,54 @@ export const DynamicList: React.FC<DynamicListProps> = ({
           id={fieldId}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Add a feature or requirement"
-          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addEntry();
+            }
+          }}
+          placeholder="e.g. User authentication with JWT and refresh tokens"
+          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
         />
         <button
           type="button"
           onClick={addEntry}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-indigo-500"
+          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          Add
+          <Plus className="w-3.5 h-3.5" />
+          Add Requirement
         </button>
       </div>
 
       <div className="space-y-2">
         {value.map((entry, index) => (
-          <div key={entry.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 p-3 space-y-2">
+          <div key={entry.id} className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
-                Item {index + 1}
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Requirement #{index + 1}
               </span>
               <button
                 type="button"
                 onClick={() => removeEntry(entry.id)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                className="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                 title="Remove item"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
 
             <input
               value={entry.text}
               onChange={(e) => updateEntry(entry.id, 'text', e.target.value)}
-              placeholder="Requirement text"
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+              placeholder="Requirement description"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-3 py-1.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100"
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <select
                 value={entry.priority}
-                onChange={(e) => updateEntry(entry.id, 'priority', e.target.value)}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                onChange={(e) => updateEntry(entry.id, 'priority', e.target.value as any)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100"
               >
                 {priorityOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -124,8 +130,8 @@ export const DynamicList: React.FC<DynamicListProps> = ({
               <input
                 value={entry.category}
                 onChange={(e) => updateEntry(entry.id, 'category', e.target.value)}
-                placeholder="Category"
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                placeholder="Category (e.g. Auth, Data, API)"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>

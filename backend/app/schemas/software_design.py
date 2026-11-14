@@ -170,16 +170,28 @@ class ERDiagramSlot(BaseModel):
         if isinstance(data, dict):
             data.setdefault("diagram_type", "er")
             data.setdefault("title", "ER Diagram")
+            if "mermaid_code" in data and isinstance(data["mermaid_code"], str):
+                code = data["mermaid_code"].strip()
+                if code.startswith("```"):
+                    lines = code.splitlines()
+                    if lines and lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    code = "\n".join(lines).strip()
+                data["mermaid_code"] = code
         return data
 
     @model_validator(mode="after")
     def validate_er_syntax(self) -> "ERDiagramSlot":
         code = self.mermaid_code.strip() if self.mermaid_code else ""
         if code and not code.startswith("erDiagram"):
-            raise ValueError(
-                f"ER Diagram mermaid_code must start with 'erDiagram'. "
-                f"Got: '{code[:60]}...'"
-            )
+            lines = [l.strip() for l in code.splitlines() if l.strip() and not l.strip().startswith("%%")]
+            if lines and not lines[0].startswith("erDiagram"):
+                raise ValueError(
+                    f"ER Diagram mermaid_code must start with 'erDiagram'. "
+                    f"Got: '{code[:60]}...'"
+                )
         return self
 
 
@@ -214,16 +226,28 @@ class ClassDiagramSlot(BaseModel):
         if isinstance(data, dict):
             data.setdefault("diagram_type", "class")
             data.setdefault("title", "Class Diagram")
+            if "mermaid_code" in data and isinstance(data["mermaid_code"], str):
+                code = data["mermaid_code"].strip()
+                if code.startswith("```"):
+                    lines = code.splitlines()
+                    if lines and lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    code = "\n".join(lines).strip()
+                data["mermaid_code"] = code
         return data
 
     @model_validator(mode="after")
     def validate_class_syntax(self) -> "ClassDiagramSlot":
         code = self.mermaid_code.strip() if self.mermaid_code else ""
         if code and not code.startswith("classDiagram"):
-            raise ValueError(
-                f"Class Diagram mermaid_code must start with 'classDiagram'. "
-                f"Got: '{code[:60]}...'"
-            )
+            lines = [l.strip() for l in code.splitlines() if l.strip() and not l.strip().startswith("%%")]
+            if lines and not lines[0].startswith("classDiagram"):
+                raise ValueError(
+                    f"Class Diagram mermaid_code must start with 'classDiagram'. "
+                    f"Got: '{code[:60]}...'"
+                )
         return self
 
 
@@ -262,16 +286,29 @@ class ComponentDiagramSlot(BaseModel):
         if isinstance(data, dict):
             data.setdefault("diagram_type", "component")
             data.setdefault("title", "Component Diagram")
+            if "mermaid_code" in data and isinstance(data["mermaid_code"], str):
+                code = data["mermaid_code"].strip()
+                if code.startswith("```"):
+                    lines = code.splitlines()
+                    if lines and lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    code = "\n".join(lines).strip()
+                data["mermaid_code"] = code
         return data
 
     @model_validator(mode="after")
     def validate_component_syntax(self) -> "ComponentDiagramSlot":
         code = self.mermaid_code.strip() if self.mermaid_code else ""
-        if code and not (code.startswith("graph TD") or code.startswith("graph LR") or code.startswith("flowchart TD") or code.startswith("flowchart LR")):
-            raise ValueError(
-                f"Component Diagram mermaid_code must start with 'graph TD'. "
-                f"Got: '{code[:60]}...'"
-            )
+        valid_starts = ("graph TD", "graph LR", "graph TB", "flowchart TD", "flowchart LR", "flowchart TB")
+        if code and not any(code.startswith(s) for s in valid_starts):
+            lines = [l.strip() for l in code.splitlines() if l.strip() and not l.strip().startswith("%%")]
+            if lines and not any(lines[0].startswith(s) for s in valid_starts):
+                raise ValueError(
+                    f"Component Diagram mermaid_code must start with 'graph TD'. "
+                    f"Got: '{code[:60]}...'"
+                )
         return self
 
 

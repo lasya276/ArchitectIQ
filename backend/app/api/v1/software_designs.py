@@ -85,8 +85,8 @@ def generate_software_design(
             blueprint_version=request_in.blueprint_version,
         )
     except RuntimeError as e:
-        # Configuration error (missing API key, etc.)
-        logger.error(f"Software design configuration error: {str(e)}")
+        # Configuration error or all AI models unavailable
+        logger.error(f"Software design error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
@@ -95,10 +95,7 @@ def generate_software_design(
         logger.error(f"Software design generation failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=(
-                "Software design generation failed due to an AI service error. "
-                "Please try again. If the problem persists, contact support."
-            )
+            detail=f"Software design generation failed: {str(e)}"
         )
 
     # Persist as a new software design version

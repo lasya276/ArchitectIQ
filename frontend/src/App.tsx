@@ -11,6 +11,9 @@ import { WorkspacePage } from './pages/WorkspacePage';
 import { WizardPage } from './pages/WizardPage';
 import { BlueprintPage } from './pages/BlueprintPage';
 import { SoftwareDesignPage } from './pages/SoftwareDesignPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { SettingsPage } from './pages/SettingsPage';
+import { DocsPage } from './pages/DocsPage';
 
 export const App: React.FC = () => {
   return (
@@ -62,6 +65,34 @@ export const App: React.FC = () => {
                   <SoftwareDesignPage />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/docs"
+              element={
+                <ProtectedRoute>
+                  <DocsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/documentation"
+              element={<Navigate to="/docs" replace />}
             />
 
             {/* Catch-all Fallback */}

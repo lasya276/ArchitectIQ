@@ -9,6 +9,7 @@ from app.api.v1.projects import router as projects_router
 from app.api.v1.questionnaires import router as questionnaires_router
 from app.api.v1.blueprints import router as blueprints_router
 from app.api.v1.software_designs import router as software_designs_router
+from app.api.v1.exports import router as exports_router
 
 api_router = APIRouter()
 
@@ -18,3 +19,4 @@ api_router.include_router(projects_router, prefix="/projects", tags=["Projects &
 api_router.include_router(questionnaires_router, prefix="/projects", tags=["Questionnaires"])
 api_router.include_router(blueprints_router, prefix="/projects", tags=["Architecture Blueprints"])
 api_router.include_router(software_designs_router, prefix="/projects", tags=["Software Designs"])
+api_router.include_router(exports_router, prefix="/projects", tags=["Document Export"])

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers } from 'lucide-react';
+import { AQLogo } from '../brand/AQLogo';
 
 export const Footer: React.FC = () => {
   return (
@@ -7,14 +7,11 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-1">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                <Layers className="w-4 h-4" />
-              </div>
-              <span className="text-lg font-bold text-slate-900 dark:text-white">ArchitectIQ</span>
+            <div className="mb-3">
+              <AQLogo size="sm" showTagline={true} />
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              AI-Powered Software Planning Workspace translating ideas into production-grade engineering blueprints.
+              Software planning and architecture workspace for production-grade engineering specifications.
             </p>
           </div>
 
@@ -48,7 +45,26 @@ export const Footer: React.FC = () => {
 
         <div className="border-t border-slate-100 dark:border-slate-900 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <p>© {new Date().getFullYear()} ArchitectIQ Platform. All rights reserved.</p>
-          <p className="mt-2 sm:mt-0">Engineered for production-grade software architecture.</p>
+          <div className="mt-2 sm:mt-0 flex items-center gap-3">
+            <button
+              type="button"
+              id="replay-intro-footer-button"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('architectiq_intro_seen');
+                } catch {
+                  // Ignore
+                }
+                window.dispatchEvent(new CustomEvent('architectiq_replay_intro'));
+              }}
+              className="text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer text-xs font-medium focus:outline-none"
+              title="Replay the animated brand intro experience"
+            >
+              Replay Intro
+            </button>
+            <span className="text-slate-300 dark:text-slate-700">·</span>
+            <p>Engineered for production-grade software architecture.</p>
+          </div>
         </div>
       </div>
     </footer>

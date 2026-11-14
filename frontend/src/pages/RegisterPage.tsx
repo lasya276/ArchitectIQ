@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
+import { AQLogo } from '../components/brand/AQLogo';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,14 +61,9 @@ export const RegisterPage: React.FC = () => {
       </div>
 
       {/* Brand Header */}
-      <div className="mb-8 text-center">
-        <Link to="/" id="signup-brand-logo" className="inline-flex items-center gap-2.5 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
-            <Layers className="w-5 h-5" />
-          </div>
-          <span className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Architect<span className="gradient-text">IQ</span>
-          </span>
+      <div className="mb-6 text-center">
+        <Link to="/" id="signup-brand-logo" className="inline-flex items-center mb-2 focus:outline-none">
+          <AQLogo size="md" />
         </Link>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Create your software planning workspace account
@@ -75,7 +71,7 @@ export const RegisterPage: React.FC = () => {
       </div>
 
       {/* Registration Card Container */}
-      <Card className="w-full max-w-md shadow-xl border-slate-200/80 dark:border-slate-800/80">
+      <Card className="w-full max-w-sm border-slate-200 dark:border-slate-800 shadow-sm">
         {errorMessage && (
           <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-medium">
             <AlertCircle className="w-4 h-4 shrink-0" />

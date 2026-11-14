@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 115 115" fill="none">
+  <defs>
+    <!-- Midnight Navy Gradient Background -->
+    <linearGradient id="aq_bg" x1="0" y1="0" x2="115" y2="115" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1428"/>
+      <stop offset="100%" stop-color="#141E36"/>
+    </linearGradient>
+
+    <!-- Squircle Border Highlight -->
+    <linearGradient id="aq_border" x1="0" y1="0" x2="115" y2="115" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(56, 217, 245, 0.45)"/>
+      <stop offset="50%" stop-color="rgba(40, 123, 255, 0.3)"/>
+      <stop offset="100%" stop-color="rgba(121, 91, 255, 0.25)"/>
+    </linearGradient>
+
+    <!-- Core Brand Gradient: Electric Blue to Cyan with Violet Accent -->
+    <linearGradient id="aq_primary" x1="14" y1="12" x2="104" y2="84" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38D9F5"/>
+      <stop offset="55%" stop-color="#287BFF"/>
+      <stop offset="100%" stop-color="#795BFF"/>
+    </linearGradient>
+
+    <!-- Dynamic Q Tail Gradient -->
+    <linearGradient id="aq_tail" x1="62" y1="56" x2="106" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#287BFF"/>
+      <stop offset="100%" stop-color="#38D9F5"/>
+    </linearGradient>
+
+    <!-- Optical Weave Mask -->
+    <mask id="aq_mask">
+      <rect x="-10" y="-10" width="135" height="135" fill="#FFFFFF"/>
+      <path d="M 38 12 L 64 84" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+    </mask>
+  </defs>
+
+  <!-- Precision Architectural Squircle Badge -->
+  <rect x="2" y="2" width="111" height="111" rx="26" fill="url(#aq_bg)"/>
+  <rect x="2" y="2" width="111" height="111" rx="26" stroke="url(#aq_border)" stroke-width="2"/>
+
+  <!-- Interlocking AQ Lettermark -->
+  <g transform="translate(0, 12.5)">
+    <!-- Letter Q Body: Masked behind A's right leg -->
+    <circle cx="70" cy="48" r="26" stroke="url(#aq_primary)" stroke-width="7.5" stroke-linecap="round" mask="url(#aq_mask)"/>
+
+    <!-- Letter A Architecture -->
+    <path d="M 14 84 L 38 12 L 64 84" stroke="url(#aq_primary)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 23 56 L 53 56" stroke="url(#aq_primary)" stroke-width="6.5" stroke-linecap="round"/>
+
+    <!-- Front Interlock of Q (passes over A's lower leg) -->
+    <path d="M 60 72 C 63.2 73.3 66.5 74 70 74 C 74 74 77.8 73 81.2 71.2" stroke="url(#aq_primary)" stroke-width="7.5" stroke-linecap="round"/>
+
+    <!-- Distinctive curved Q tail -->
+    <path d="M 58 52 C 68 64 80 74 94 77 C 98 77.5 102 76 104 72" stroke="url(#aq_tail)" stroke-width="7.5" stroke-linecap="round"/>
+  </g>
+</svg>

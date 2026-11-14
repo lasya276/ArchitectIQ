@@ -3,20 +3,184 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-primary: #F8F9FB;
+    --bg-surface: #FFFFFF;
+    --text-primary: #17191C;
+    --text-secondary: #6B7280;
+    --border-color: #E5E7EB;
+  }
+
+  .dark {
+    --bg-primary: #0B0F19;
+    --bg-surface: #111622;
+    --text-primary: #F3F4F6;
+    --text-secondary: #9CA3AF;
+    --border-color: #1F293D;
+  }
+
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.35);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.6);
   }
 }
 
-/* Custom Glassmorphic & Gradient utilities */
-.glass-panel {
-  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80;
+/* Restrained animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500;
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out forwards;
 }
 
-.glow-effect {
-  box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25);
+/* ==========================================================================
+   ArchitectIQ Animated Intro & AQ Monogram Keyframes
+   ========================================================================== */
+
+/* Vector Stroke Drawing Keyframes */
+@keyframes drawStrokeA {
+  0% {
+    stroke-dashoffset: 220;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
+
+@keyframes drawStrokeQ {
+  0% {
+    stroke-dashoffset: 200;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes drawStrokeBar {
+  0% {
+    stroke-dashoffset: 60;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes drawStrokeTail {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.aq-stroke-anim-a {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  animation: drawStrokeA 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.aq-stroke-anim-q {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: drawStrokeQ 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+}
+
+.aq-stroke-anim-bar {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: drawStrokeBar 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards;
+}
+
+.aq-stroke-anim-front {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: drawStrokeBar 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+}
+
+.aq-stroke-anim-tail {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawStrokeTail 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.65s forwards;
+}
+
+/* Light Sweep Ray Animation */
+@keyframes lightSweepAnim {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(250%) skewX(-25deg);
+    opacity: 0;
+  }
+}
+
+.animate-light-sweep {
+  animation: lightSweepAnim 1.1s cubic-bezier(0.4, 0, 0.2, 1) 1.8s forwards;
+}
+
+/* Intro Background Grid Pattern */
+.architect-grid-bg {
+  background-image: 
+    linear-gradient(to right, rgba(56, 217, 245, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 217, 245, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+

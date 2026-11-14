@@ -1,15 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertCircle, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { projectService } from '../services/projectService';
 import { questionnaireService } from '../services/questionnaireService';
 import { WIZARD_STEPS, TOTAL_STEPS } from '../wizard/wizardConfig';
 import { WizardProvider, useWizard } from '../wizard/context/WizardContext';
 import { WizardStep } from '../wizard/components/WizardStep';
-import { StepIndicator } from '../wizard/components/StepIndicator';
 import { ReviewStep } from '../wizard/components/ReviewStep';
 
 const WizardContent: React.FC = () => {
@@ -95,83 +93,86 @@ const WizardContent: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-5xl space-y-6 py-2">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
-              <Sparkles className="h-3.5 w-3.5" />
-              Requirement Discovery Wizard
-            </div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              Project Requirements Intake
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Use the guided workflow to define the project, constraints, and priorities.
-            </p>
+      <div className="max-w-3xl mx-auto py-4 space-y-6">
+        {/* Wizard Header with Progress */}
+        <div className="space-y-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-semibold uppercase tracking-wider text-[10px] text-blue-600 dark:text-blue-400">
+              Project Setup
+            </span>
+            <span>
+              {isReviewStep ? 'Review & Confirm' : `Step ${currentStep + 1} of ${TOTAL_STEPS}`}
+            </span>
+          </div>
+
+          {/* Clean Thin Progress Bar */}
+          <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all duration-300 ease-out"
+              style={{ width: `${completionPercent}%` }}
+            />
           </div>
         </div>
 
-        <Card className="overflow-hidden border-slate-200/80 bg-white/80 p-0 shadow-[0_8px_40px_-20px_rgba(99,102,241,0.45)] dark:border-slate-800 dark:bg-slate-900/70">
-          <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="p-4 sm:p-6 lg:p-7">
+        {/* Step Body */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 sm:p-8 shadow-xs">
+          {isReviewStep ? (
+            <ReviewStep answers={answers} onEdit={goToStep} validation={validation} />
+          ) : (
+            <WizardStep step={currentConfig} answers={answers} onChange={updateAnswer} validation={validation} />
+          )}
+
+          {submitError && (
+            <div className="mt-6 p-3 rounded-md bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
+          {/* Navigation Controls */}
+          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancel}
+              leftIcon={<X className="w-3.5 h-3.5" />}
+            >
+              Cancel
+            </Button>
+
+            <div className="flex items-center gap-2.5 justify-end">
+              {currentStep > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBack}
+                  leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}
+                >
+                  Back
+                </Button>
+              )}
+
               {isReviewStep ? (
-                <ReviewStep answers={answers} onEdit={goToStep} validation={validation} />
+                <Button
+                  size="sm"
+                  isLoading={isSubmitting}
+                  onClick={handleFinish}
+                  leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                >
+                  Finish & Create Workspace
+                </Button>
               ) : (
-                <WizardStep step={currentConfig} answers={answers} onChange={updateAnswer} validation={validation} />
+                <Button
+                  size="sm"
+                  onClick={handleNext}
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                >
+                  Continue
+                </Button>
               )}
             </div>
-
-            <aside className="border-t border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-950/40 sm:p-5 lg:border-l lg:border-t-0">
-              <div className="sticky top-4 space-y-4">
-                <StepIndicator
-                  currentStep={isReviewStep ? WIZARD_STEPS.length - 1 : currentStep}
-                  totalSteps={TOTAL_STEPS}
-                  onStepClick={(stepIndex) => goToStep(stepIndex)}
-                />
-
-                <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Completion Snapshot</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{completionPercent}% of the intake flow is now completed.</p>
-                </div>
-              </div>
-            </aside>
           </div>
-
-          <div className="sticky bottom-0 border-t border-slate-200 bg-slate-50/90 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/80 sm:px-6">
-            <div className="mx-auto flex max-w-5xl flex-col gap-3">
-              {submitError && (
-                <div className="flex items-center gap-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{submitError}</span>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCancel} leftIcon={<X className="h-4 w-4" />}>
-                    Cancel
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={handleBack} leftIcon={<ArrowLeft className="h-4 w-4" />}>
-                    Previous
-                  </Button>
-
-                  {isReviewStep ? (
-                    <Button size="sm" isLoading={isSubmitting} onClick={handleFinish} leftIcon={<CheckCircle2 className="h-4 w-4" />}>
-                      Finish
-                    </Button>
-                  ) : (
-                    <Button size="sm" onClick={handleNext} rightIcon={<ArrowRight className="h-4 w-4" />}>
-                      Next
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
