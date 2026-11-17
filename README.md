@@ -1,133 +1,192 @@
-# ArchitectIQ — Phase 1 Base Infrastructure & Setup
+# ArchitectIQ
 
-This repository contains the **Phase 1: Project Setup & Base Infrastructure** implementation for **ArchitectIQ** — a production-grade AI-powered Software Planning Workspace.
+### AI-Powered Software Planning and Architecture Workspace
+
+ArchitectIQ is an AI-powered platform that helps developers transform project ideas into structured software plans and architecture designs.
+
+Users can create projects, complete guided questionnaires, generate AI-powered architecture blueprints and software designs, visualize system diagrams, and export documentation in PDF and DOCX formats.
+
+**Live Demo:** [ArchitectIQ](https://architectiq-gamma.vercel.app)
+
+## ✨ Key Features
+
+- **Project Workspace:** Create and manage software projects in one place.
+- **Guided Questionnaires:** Answer structured questions to define project requirements.
+- **AI Architecture Blueprint:** Generate architecture recommendations based on project requirements.
+- **Software Design Generation:** Create detailed software design documentation.
+- **AI Regeneration:** Regenerate architecture blueprints and software designs when requirements change.
+- **Architecture Diagrams:** Visualize system architecture using Mermaid diagrams.
+- **Document Export:** Export generated documentation in PDF and DOCX formats.
+- **User Authentication:** Secure registration and login functionality.
 
 ---
 
-## Technical Stack (Phase 1 Baseline)
+## 🛠️ Technology Stack
 
-- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, React Router v6, Lucide Icons.
-- **Backend:** FastAPI (Python 3.11), Pydantic v2, SQLAlchemy 2.0 (PostgreSQL driver).
-- **Database:** PostgreSQL 15 (Relational storage setup).
-- **Vector Database:** ChromaDB (Persistent vector store initialization).
-- **Containerization:** Docker & Docker Compose.
+### Frontend
+- React.js
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Lucide React
+
+### Backend
+- Python
+- FastAPI
+- Pydantic
+- SQLAlchemy
+
+### Database
+- PostgreSQL
+- Alembic (Database Migrations)
+
+### AI Integration
+- Google Gemini API
+
+### Visualization & Export
+- Mermaid.js
+- PDF and DOCX generation
+
+### Tools & Deployment
+- Git & GitHub
+- Docker & Docker Compose
+- Vercel
+- Neon PostgreSQL
 
 ---
 
-## Project Structure Overview
+## 🏗️ System Architecture
 
-```
+ArchitectIQ follows a client-server architecture with a React-based frontend, a FastAPI backend, and a PostgreSQL database.
+
+The frontend communicates with the backend through REST APIs. The backend handles authentication, project management, questionnaire processing, AI integration, and document generation.
+
+Google Gemini API is integrated to generate architecture blueprints and software design documentation based on project requirements.
+
+### Application Flow
+
+1. Users register or log in to the application.
+2. Users create a new software project.
+3. Users complete the guided project questionnaire.
+4. The backend processes the requirements and interacts with the Gemini API.
+5. The generated architecture blueprint and software design are displayed.
+6. Users can visualize diagrams, regenerate designs, and export documents.
+
+---
+
+## 📸 Application Screenshots
+
+### Login Page
+[alt text](image.png)
+
+### Dashboard
+![alt text](image-2.png)
+
+### Project Workspace
+![alt text](image-3.png)
+
+### Architecture Blueprint
+![alt text](image-4.png)
+
+### Software Design
+![alt text](image-5.png)
+
+### Export Documentation
+![alt text](image-6.png)
+
+---
+
+## 📁 Project Structure
+
+```text
 ArchitectIQ/
-├── docker-compose.yml             # Docker Compose orchestration file
-├── .env.example                   # Environment configuration template
-├── README.md                      # Setup and verification instructions
-├── backend/                       # FastAPI Backend Application
-│   ├── Dockerfile
+│
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── main.py
+│   │
+│   ├── alembic/
 │   ├── requirements.txt
-│   ├── .env.example
-│   └── app/
-│       ├── main.py                # App entrypoint & /api/v1/health check
-│       ├── core/
-│       │   └── config.py          # Settings & Environment variables loader
-│       └── db/
-│           ├── session.py         # PostgreSQL database connection check
-│           └── vector_db.py       # ChromaDB vector store initialization
-└── frontend/                      # React Single Page Application
-    ├── Dockerfile
-    ├── package.json
-    ├── vite.config.ts
-    ├── tailwind.config.js
-    └── src/
-        ├── App.tsx                # App router (Landing, Login, Register, Dashboard)
-        ├── main.tsx               # DOM entrypoint
-        ├── index.css              # Global styles & custom Tailwind utilities
-        ├── context/
-        │   └── ThemeContext.tsx   # Global Dark/Light Theme state
-        ├── components/
-        │   ├── ui/                # Reusable UI Components (Button, Card, Input, Modal, Spinner, ThemeToggle)
-        │   └── layout/            # Layout Components (Navbar, Footer, DashboardLayout)
-        └── pages/                 # Phase 1 UI Pages (LandingPage, LoginPage, RegisterPage, DashboardPage)
+│   └── Dockerfile
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── assets/
+│   │
+│   ├── package.json
+│   └── Dockerfile
+│
+├── docker-compose.yml
+├── vercel.json
+└── README.md
 ```
+---
+
+## 🔐 Environment Variables
+
+ArchitectIQ requires environment variables for database connectivity, authentication, and AI integration.
+
+Create a `.env` file using the provided `.env.example` template and configure the following variables:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL database connection URL |
+| `JWT_SECRET` | Secret key used for JWT authentication |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `COOKIE_SECURE` | Enables secure cookies in production |
+| `COOKIE_SAMESITE` | Configures the cookie SameSite policy |
+
+**Important:** Never commit your actual `.env` file or expose API keys, database credentials, or authentication secrets. Use placeholder values in `.env.example`.
 
 ---
 
-## Local Development Setup
+## 📡 API Documentation
 
-### Method 1: Docker Compose (Recommended)
+ArchitectIQ provides REST APIs through the FastAPI backend.
 
-1. Ensure Docker Desktop is installed and running on your system.
-2. Clone/navigate to the repository root directory:
-   ```bash
-   cd ArchitectIQ
-   ```
-3. Copy environment configuration:
-   ```bash
-   cp .env.example .env
-   ```
-4. Build and start all services:
-   ```bash
-   docker-compose up --build
-   ```
-5. Access running services:
-   - **Frontend UI Workspace:** `http://localhost:3000` (or `http://localhost:5173` if running locally via Vite)
-   - **Backend API Server:** `http://localhost:8000`
-   - **Interactive API Swagger Docs:** `http://localhost:8000/docs`
-   - **Health Check Endpoint:** `http://localhost:8000/api/v1/health`
+When running the backend locally, access:
+
+- **API Documentation (Swagger UI):** `http://localhost:8000/docs`
+- **Health Check:** `/api/v1/health`
+
+## ☁️ Deployment
+
+ArchitectIQ is deployed using:
+
+- **Frontend & Backend:** Vercel
+- **Database:** Neon PostgreSQL
+- **AI Integration:** Google Gemini API
+
+**Live Application:** https://architectiq-gamma.vercel.app
 
 ---
 
-### Method 2: Manual Local Setup (Without Docker)
+## 🔮 Future Enhancements
 
-#### Backend Setup:
-```bash
-cd backend
-python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
-# On Linux/macOS:
-source .venv/bin/activate
-
-pip install -r requirements.txt
-cp .env.example .env
-
-# Run FastAPI Server
-uvicorn app.main:app --reload --port 8000
-```
-
-#### Frontend Setup:
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- Improve architecture recommendations and AI-generated outputs.
+- Add support for more architecture diagram types.
+- Enhance project collaboration and workspace management.
+- Introduce additional export and documentation options.
 
 ---
 
-## Verification Steps (Phase 1 Baseline)
+## 👩‍💻 Author
 
-1. **Verify Backend Health Check:**
-   - Open browser or execute HTTP GET request to `http://localhost:8000/api/v1/health`.
-   - Expected JSON Response:
-     ```json
-     {
-       "status": "healthy",
-       "services": {
-         "api": { "status": "healthy" },
-         "database": { "status": "healthy", "message": "PostgreSQL connection successful" },
-         "vector_store": { "status": "healthy", "message": "ChromaDB connection successful", "heartbeat": 1722300000 }
-       }
-     }
-     ```
+**Vemula Sri Lasya**
 
-2. **Verify Frontend UI Pages:**
-   - **Landing Page (`/`):** Confirm responsive hero section, features list, "How ArchitectIQ Works" workflow, and CTA.
-   - **Theme Toggle:** Click the sun/moon icon in the top right to verify seamless switching between Dark and Light mode.
-   - **Sign In Page (`/login`):** Verify clean card layout with email and password inputs.
-   - **Sign Up Page (`/register`):** Verify registration form fields.
-   - **Dashboard Workspace (`/dashboard`):** Verify empty dashboard layout shell including sidebar navigation, top header, status indicator, and preview modal.
+- GitHub: [@lasya276](https://github.com/lasya276)
 
 ---
 
-## Phase 1 Status: COMPLETED ✅
+## 📄 License
 
-Ready for **Phase 2: Authentication & Project Workspace** implementation!
+This project is developed for educational and portfolio purposes.
