@@ -6,7 +6,7 @@ ArchitectIQ is an AI-powered platform that helps developers transform project id
 
 Users can create projects, complete guided questionnaires, generate AI-powered architecture blueprints and software designs, visualize system diagrams, and export documentation in PDF and DOCX formats.
 
-**Live Demo:** [ArchitectIQ](https://architectiq-gamma.vercel.app)
+## **Live Demo:** [ArchitectIQ](https://architectiq-gamma.vercel.app)
 
 ## ✨ Key Features
 
