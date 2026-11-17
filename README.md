@@ -77,8 +77,11 @@ Google Gemini API is integrated to generate architecture blueprints and software
 
 ## 📸 Application Screenshots
 
+### Landing Page
+![alt text](image-8.png)
+
 ### Login Page
-[alt text](image.png)
+![alt text](image-7.png)
 
 ### Dashboard
 ![alt text](image-2.png)
